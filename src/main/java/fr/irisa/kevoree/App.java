@@ -23,6 +23,7 @@ public class App
 			@Override
 			public void run() {
 				DockerHelper.removeAllContainer();
+				DockerHelper.removeNetwork();
 			}
 		});
 	}

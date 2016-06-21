@@ -32,15 +32,18 @@ public class DockerHelper{
 	private static List<String> containerList = new ArrayList<String>();
 
 	private static Volume volumeKsContainerPath = new Volume("/root/model.kevs");
+	
+	private static String networkName = "";
 
-	private static void createNetwork(String ip){
+	private static synchronized  void createNetwork(String ip){
 		String[] splittedArray = ip.split("\\.");
 		String firstThreeSegments = splittedArray [0] + "." + splittedArray [1] + "." + splittedArray [2] + ".";
+		networkName = firstThreeSegments+"kevoreeScalability";
 
 		boolean alreadyExist = false;
 		List<Network> networks = dockerClient.listNetworksCmd().exec();
 		for (Network network : networks) {
-			if(network.getName().equals("kevoreeScalability")){
+			if(network.getName().equals(networkName)){
 				alreadyExist = true;
 			}
 		}
@@ -50,7 +53,7 @@ public class DockerHelper{
 			.withIpam(new Network.Ipam()
 					.withConfig(new Network.Ipam.Config()
 							.withSubnet(firstThreeSegments+"0/24")))
-			.withName("kevoreeScalability")
+			.withName(firstThreeSegments+"kevoreeScalability")
 			.exec();
 		}
 	}
@@ -59,7 +62,7 @@ public class DockerHelper{
 	public static void startContainerJsNode(String nodeName, String ksPath, String ip){
 		createNetwork(ip);
 		CreateContainerResponse container = dockerClient.createContainerCmd("savak/kevoree-js:snapshot")
-				.withNetworkMode("kevoreeScalability")
+				.withNetworkMode(networkName)
 				.withIpv4Address(ip)
 				.withName(nodeName+"Container")
 				.withVolumes(volumeKsContainerPath)
@@ -75,7 +78,7 @@ public class DockerHelper{
 	public static void startContainerJavaNode(String nodeName, String ksPath, String ip){
 		createNetwork(ip);
 		CreateContainerResponse container = dockerClient.createContainerCmd("savak/kevoree-java")
-				.withNetworkMode("kevoreeScalability")
+				.withNetworkMode(networkName)
 				.withIpv4Address(ip)
 				.withName(nodeName+"Container")
 				.withVolumes(volumeKsContainerPath)
@@ -94,6 +97,11 @@ public class DockerHelper{
 			.withForce(true)
 			.exec();
 		}
+	}
+	
+	public static void removeNetwork(){
+		dockerClient.removeNetworkCmd(networkName)
+		.exec();
 	}
 
 	public static String getLogs(String containerId) throws Exception {
