@@ -3,12 +3,10 @@ package fr.irisa.kevoree;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+
 import com.github.dockerjava.api.DockerClient;
 import com.github.dockerjava.api.command.CreateContainerResponse;
-import com.github.dockerjava.api.command.CreateNetworkResponse;
-import com.github.dockerjava.api.command.LogContainerCmd;
 import com.github.dockerjava.api.model.Bind;
-import com.github.dockerjava.api.model.Container;
 import com.github.dockerjava.api.model.Frame;
 import com.github.dockerjava.api.model.Network;
 import com.github.dockerjava.api.model.Volume;
@@ -35,7 +33,10 @@ public class DockerHelper{
 
 	private static Volume volumeKsContainerPath = new Volume("/root/model.kevs");
 
-	private static void createNetwork(){
+	private static void createNetwork(String ip){
+		String[] splittedArray = ip.split("\\.");
+		String firstThreeSegments = splittedArray [0] + "." + splittedArray [1] + "." + splittedArray [2] + ".";
+
 		boolean alreadyExist = false;
 		List<Network> networks = dockerClient.listNetworksCmd().exec();
 		for (Network network : networks) {
@@ -45,18 +46,18 @@ public class DockerHelper{
 		}
 
 		if(!alreadyExist){
-			CreateNetworkResponse createNetworkResponse = dockerClient.createNetworkCmd()
-					.withIpam(new Network.Ipam()
-							.withConfig(new Network.Ipam.Config()
-									.withSubnet("10.100.101.0/24")))
-					.withName("kevoreeScalability")
-					.exec();
+			dockerClient.createNetworkCmd()
+			.withIpam(new Network.Ipam()
+					.withConfig(new Network.Ipam.Config()
+							.withSubnet(firstThreeSegments+"0/24")))
+			.withName("kevoreeScalability")
+			.exec();
 		}
 	}
 
 
 	public static void startContainerJsNode(String nodeName, String ksPath, String ip){
-		createNetwork();
+		createNetwork(ip);
 		CreateContainerResponse container = dockerClient.createContainerCmd("savak/kevoree-js:snapshot")
 				.withNetworkMode("kevoreeScalability")
 				.withIpv4Address(ip)
@@ -72,7 +73,7 @@ public class DockerHelper{
 	}
 
 	public static void startContainerJavaNode(String nodeName, String ksPath, String ip){
-		createNetwork();
+		createNetwork(ip);
 		CreateContainerResponse container = dockerClient.createContainerCmd("savak/kevoree-java")
 				.withNetworkMode("kevoreeScalability")
 				.withIpv4Address(ip)
@@ -98,45 +99,45 @@ public class DockerHelper{
 	public static String getLogs(String containerId) throws Exception {
 		LogContainerTestCallback  loggingCallback = new LogContainerTestCallback(true); // borrowed from AbstractDockerClientTest
 		dockerClient.logContainerCmd(containerId)
-		     .withStdErr(true)
-		     .withStdOut(true)
-		     .withFollowStream(true)
-		     .withTailAll()
-		     .exec(loggingCallback);
-		
+		.withStdErr(true)
+		.withStdOut(true)
+		.withFollowStream(true)
+		.withTailAll()
+		.exec(loggingCallback);
+
 		loggingCallback.awaitCompletion(10, TimeUnit.SECONDS);
 		return loggingCallback.toString();
-    }
-	
+	}
+
 	public static class LogContainerTestCallback extends LogContainerResultCallback {
-        protected final StringBuffer log = new StringBuffer();
+		protected final StringBuffer log = new StringBuffer();
 
-        List<Frame> collectedFrames = new ArrayList<Frame>();
+		List<Frame> collectedFrames = new ArrayList<Frame>();
 
-        boolean collectFrames = false;
+		boolean collectFrames = false;
 
-        public LogContainerTestCallback() {
-            this(false);
-        }
+		public LogContainerTestCallback() {
+			this(false);
+		}
 
-        public LogContainerTestCallback(boolean collectFrames) {
-            this.collectFrames = collectFrames;
-        }
+		public LogContainerTestCallback(boolean collectFrames) {
+			this.collectFrames = collectFrames;
+		}
 
-        @Override
-        public void onNext(Frame frame) {
-            if(collectFrames) collectedFrames.add(frame);
-            log.append(new String(frame.getPayload()));
-        }
+		@Override
+		public void onNext(Frame frame) {
+			if(collectFrames) collectedFrames.add(frame);
+			log.append(new String(frame.getPayload()));
+		}
 
-        @Override
-        public String toString() {
-            return log.toString();
-        }
+		@Override
+		public String toString() {
+			return log.toString();
+		}
 
 
-        public List<Frame> getCollectedFrames() {
-            return collectedFrames;
-        }
-    }
+		public List<Frame> getCollectedFrames() {
+			return collectedFrames;
+		}
+	}
 }

@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -12,22 +11,13 @@ import java.util.stream.Stream;
 
 import org.kevoree.ContainerNode;
 import org.kevoree.ContainerRoot;
-import org.kevoree.FragmentDictionary;
 import org.kevoree.Group;
 import org.kevoree.TypeDefinition;
 import org.kevoree.Value;
-import org.kevoree.annotation.KevoreeInject;
 import org.kevoree.api.KevScriptService;
-import org.kevoree.api.ModelService;
-import org.kevoree.api.handler.UUIDModel;
-import org.kevoree.api.handler.UpdateCallback;
-import org.kevoree.core.impl.ContextAwareAdapter;
-import org.kevoree.core.impl.ContextAwareModelService;
-import org.kevoree.core.impl.KevoreeCoreBean;
 import org.kevoree.factory.DefaultKevoreeFactory;
 import org.kevoree.factory.KevoreeFactory;
 import org.kevoree.kevscript.KevScriptEngine;
-import org.kevoree.kevscript.Parser;
 import org.kevoree.pmodeling.api.ModelCloner;
 import org.kevoree.pmodeling.api.compare.ModelCompare;
 import org.kevoree.pmodeling.api.json.JSONModelSerializer;
@@ -85,7 +75,7 @@ public class KevoreeHelper {
 		final String modelStr = serializer.serialize(model);
 		
 		// send with WebSocket to host:port:path
-		WebSocketClient wsClient = new WebSocketClient(URI.create("ws://"+getNodesNameAndIpAddressFromKevScript().get(getMasterNodeName())+":"+getMasterNodePort())) {
+		new WebSocketClient(URI.create("ws://"+getNodesNameAndIpAddressFromKevScript().get(getMasterNodeName())+":"+getMasterNodePort())) {
 			
 			@Override
 			public void onOpen() {

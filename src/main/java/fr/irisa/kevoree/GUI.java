@@ -3,18 +3,9 @@ package fr.irisa.kevoree;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.BufferedReader;
-import java.io.IOException;
 import java.io.InputStreamReader;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Stream;
 
 import javax.swing.JButton;
 import javax.swing.JFileChooser;
@@ -27,8 +18,6 @@ import javax.swing.JTextField;
 
 import org.kevoree.TypeDefinition;
 
-import com.github.dockerjava.api.model.Node;
-
 
 
 /**
@@ -37,15 +26,17 @@ import com.github.dockerjava.api.model.Node;
 
 public class GUI extends JFrame implements ActionListener{
 
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
+	
 	private String baseKevScriptPath;
 	private String baseKevScript;
 	private String updatedKevScriptPath;
 	private String updatedKevScript;
 
 	private KevoreeHelper kh;
-
-	//private Process processJS;
-	//private Process processJava;
 
 	private JLabel labelKevoreeJSPlatform = new JLabel("Kevoree JS Docker containers : ");
 	private JLabel labelKevoreeJavaPlatform = new JLabel("Kevoree Java Docker containers : ");
@@ -57,17 +48,12 @@ public class GUI extends JFrame implements ActionListener{
 	private Map<String,JScrollPane> scrollPaneJsOutpoutList = new HashMap<String,JScrollPane>();
 	private Map<String,JScrollPane> scrollPaneJavaOutpoutList = new HashMap<String,JScrollPane>();
 
-	//	private JTextArea textAreaKevoreeJSOutput = new JTextArea();
-	//	private JScrollPane scrollPaneJSOutput = new JScrollPane(textAreaKevoreeJSOutput);
-	//	private JTextArea textAreaKevoreeJavaOutput = new JTextArea();
-	//	private JScrollPane scrollPaneJavaOutput = new JScrollPane(textAreaKevoreeJavaOutput);
-
 	private JTextArea textAreaTestResults = new JTextArea();
 	private JScrollPane scrollPaneTestResults= new JScrollPane(textAreaTestResults);
 	private JButton buttonImportBaseKs = new JButton("Import a base KevScript model");
 	private JButton buttonImportUpdatedKs = new JButton("Import an updated KevScript model");
-	private JButton buttonRunPlatforms = new JButton("Run Docker containers");
-	private JButton buttonPushAdaptations = new JButton("Push updated KevScript");
+	private JButton buttonRunPlatforms = new JButton("Run Docker containers according to the base KevScript");
+	private JButton buttonPushAdaptations = new JButton("Push updated KevScript on running containers");
 	private JLabel labelPathBaseKS = new JLabel("Base KevScript path : ");
 	private JLabel labelPathUpdatedKS = new JLabel("Updated KevScript path : ");
 	private JTextField textFieldPathBaseKS = new JTextField();
@@ -122,8 +108,6 @@ public class GUI extends JFrame implements ActionListener{
 		add(labelTestResults);
 		add(scrollPaneTestResults);
 
-
-
 		setVisible(true);
 	}
 
@@ -131,6 +115,7 @@ public class GUI extends JFrame implements ActionListener{
 	public void actionPerformed(ActionEvent e) {
 
 		if(e.getSource()==buttonImportBaseKs){
+			//Delete this path or put your default target for the JFileChooser
 			JFileChooser fileChooserBaseKs = new JFileChooser("/home/Savak/Dev/Models/");
 			if(fileChooserBaseKs.showOpenDialog(this)==JFileChooser.APPROVE_OPTION){
 				baseKevScriptPath=fileChooserBaseKs.getSelectedFile().getPath();
@@ -156,7 +141,7 @@ public class GUI extends JFrame implements ActionListener{
 						textAreaJsOutpoutList.put(nodeName, new JTextArea());
 						scrollPaneJsOutpoutList.put(nodeName, new JScrollPane(textAreaJsOutpoutList.get(nodeName)));
 						tabbedPaneJsOutpout.addTab(nodeName+" container", scrollPaneJsOutpoutList.get(nodeName));
-						
+
 						try {
 							String s;
 							Process processJS = Runtime.getRuntime().exec("docker logs --follow "+nodeName+"Container");
@@ -179,13 +164,12 @@ public class GUI extends JFrame implements ActionListener{
 						textAreaJavaOutpoutList.put(nodeName, new JTextArea());
 						scrollPaneJavaOutpoutList.put(nodeName, new JScrollPane(textAreaJavaOutpoutList.get(nodeName)));
 						tabbedPaneJavaOutpout.addTab(nodeName+" container", scrollPaneJavaOutpoutList.get(nodeName));
-						
+
 						try {							
 							Process processJava = Runtime.getRuntime().exec("docker logs --follow "+nodeName+"Container");
 							BufferedReader br = new BufferedReader(new InputStreamReader(processJava.getInputStream()));
 							String s = null;
 							while ((s = br.readLine()) != null) {
-								//System.out.println("KevoreeJS line : " + s);
 								textAreaJavaOutpoutList.get(nodeName).append(s+"\n");
 							}
 							processJava.waitFor();
@@ -198,11 +182,12 @@ public class GUI extends JFrame implements ActionListener{
 					new Thread(taskStartContainerJavaNode).start();
 				}
 			}
-			
+
 			buttonImportUpdatedKs.setEnabled(true);
 		}
 
 		if(e.getSource()==buttonImportUpdatedKs){
+			//Delete this path or put your default target for the JFileChooser
 			JFileChooser fileChooserUpdatedKs = new JFileChooser("/home/Savak/Dev/Models/");
 			if(fileChooserUpdatedKs.showOpenDialog(this)==JFileChooser.APPROVE_OPTION){
 				updatedKevScriptPath=fileChooserUpdatedKs.getSelectedFile().getPath();
