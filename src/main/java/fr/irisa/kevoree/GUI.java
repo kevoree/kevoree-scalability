@@ -156,6 +156,20 @@ public class GUI extends JFrame implements ActionListener{
 						textAreaJsOutpoutList.put(nodeName, new JTextArea());
 						scrollPaneJsOutpoutList.put(nodeName, new JScrollPane(textAreaJsOutpoutList.get(nodeName)));
 						tabbedPaneJsOutpout.addTab(nodeName+" container", scrollPaneJsOutpoutList.get(nodeName));
+						
+						try {
+							String s;
+							Process processJS = Runtime.getRuntime().exec("docker logs --follow "+nodeName+"Container");
+							BufferedReader br = new BufferedReader(new InputStreamReader(processJS.getInputStream()));
+							while ((s = br.readLine()) != null) {
+								textAreaJsOutpoutList.get(nodeName).append(s+"\n");
+							}
+							processJS.waitFor();
+							System.out.println("exit : " + processJS.exitValue());
+							processJS.destroy();
+						}catch (Exception eJS) {
+							eJS.printStackTrace();
+						}
 					};
 					new Thread(taskStartContainerJsNode).start();
 				}
@@ -165,50 +179,26 @@ public class GUI extends JFrame implements ActionListener{
 						textAreaJavaOutpoutList.put(nodeName, new JTextArea());
 						scrollPaneJavaOutpoutList.put(nodeName, new JScrollPane(textAreaJavaOutpoutList.get(nodeName)));
 						tabbedPaneJavaOutpout.addTab(nodeName+" container", scrollPaneJavaOutpoutList.get(nodeName));
+						
+						try {							
+							Process processJava = Runtime.getRuntime().exec("docker logs --follow "+nodeName+"Container");
+							BufferedReader br = new BufferedReader(new InputStreamReader(processJava.getInputStream()));
+							String s = null;
+							while ((s = br.readLine()) != null) {
+								//System.out.println("KevoreeJS line : " + s);
+								textAreaJavaOutpoutList.get(nodeName).append(s+"\n");
+							}
+							processJava.waitFor();
+							System.out.println("exit : " + processJava.exitValue());
+							processJava.destroy();
+						} catch (Exception eJava) {
+							eJava.printStackTrace();
+						}
 					};
 					new Thread(taskStartContainerJavaNode).start();
 				}
 			}
-
 			
-			for (String nodeName : textAreaJsOutpoutList.keySet()){
-				Runnable taskLogsJs = () -> {
-					try {
-						String s;
-						Process processJS = Runtime.getRuntime().exec("docker logs --follow "+nodeName+"Container");
-						BufferedReader br = new BufferedReader(new InputStreamReader(processJS.getInputStream()));
-						while ((s = br.readLine()) != null) {
-							textAreaJsOutpoutList.get(nodeName).append(s+"\n");
-						}
-						processJS.waitFor();
-						System.out.println("exit : " + processJS.exitValue());
-						processJS.destroy();
-					}catch (Exception eJS) {
-						eJS.printStackTrace();
-					}
-				};
-				new Thread(taskLogsJs).start();
-			}
-			for (String nodeName : textAreaJavaOutpoutList.keySet()){
-				Runnable taskLogsJava = () -> {
-					try {
-						String s;
-						Process processJava = Runtime.getRuntime().exec("docker logs --follow "+nodeName+"Container");
-						BufferedReader br = new BufferedReader(new InputStreamReader(processJava.getInputStream()));
-						while ((s = br.readLine()) != null) {
-							System.out.println("KevoreeJS line : " + s);
-							textAreaJavaOutpoutList.get(nodeName).append(s+"\n");
-						}
-						processJava.waitFor();
-						System.out.println("exit : " + processJava.exitValue());
-						processJava.destroy();
-					} catch (Exception eJava) {
-						eJava.printStackTrace();
-					}
-				};
-				new Thread(taskLogsJava).start();
-			}
-
 			buttonImportUpdatedKs.setEnabled(true);
 		}
 
@@ -235,38 +225,3 @@ public class GUI extends JFrame implements ActionListener{
 		}
 	}
 }
-
-/*Runnable taskKevoreeJS = () -> {
-String s;
-try {
-    processJS = Runtime.getRuntime().exec("kevoreejs -n jsNode --kevscript="+baseKevScriptPath);
-    BufferedReader br = new BufferedReader(new InputStreamReader(processJS.getInputStream()));
-    while ((s = br.readLine()) != null) {
-        //System    .out.println("KevoreeJS line : " + s);
-        textAreaKevoreeJSOutput.append(s+"\n");
-    }
-    processJS.waitFor();
-    System.out.println("exit : " + processJS.exitValue());
-    processJS.destroy();
-}catch (Exception eJS) {}
-};
-
-Runnable taskKevoreeJava = () -> {
-String s;
-try {
-    processJava = Runtime.getRuntime().exec("java -jar src/main/resources/org.kevoree.platform.standalone-5.3.1.jar -Dnode.name=javaNode -Dnode.bootstrap=" + baseKevScriptPath);
-
-    BufferedReader br = new BufferedReader(new InputStreamReader(processJava.getInputStream()));
-    while ((s = br.readLine()) != null) {
-        //System.out.println("KevoreeJava line : " + s);
-        textAreaKevoreeJavaOutput.append(s + "\n");
-    }
-    processJava.waitFor();
-    System.out.println("exit : " + processJava.exitValue());
-    processJava.destroy();
-} catch (Exception eJava) {
-}
-};
-
-new Thread(taskKevoreeJS).start();
-new Thread(taskKevoreeJava).start();*/
