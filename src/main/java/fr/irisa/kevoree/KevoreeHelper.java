@@ -25,11 +25,14 @@ import org.kevoree.pmodeling.api.json.JSONModelSerializer;
 import fr.braindead.websocket.client.WebSocketClient;
 
 /**
- * Created by Savak on 08/06/16.
+ * KevoreeHelper class contains some methods for KevScript processing
+ * 
+ * @author Savak
+ * @version 1.0
  */
 
 public class KevoreeHelper {
-	// Init the variables (from inside a component)
+	
 	private final KevoreeFactory factory;
 
 	private final ModelCloner cloner;
@@ -49,7 +52,6 @@ public class KevoreeHelper {
 		ContainerRoot model = createEmptyContainerRoot();
 
 		updateModelFromKevScript(ks, model);
-
 	}
 
 	public void updateModel(String kevscript) throws Exception {		
@@ -61,25 +63,31 @@ public class KevoreeHelper {
 		// Apply the script on the current model, to get a new configuration
 		kevScriptService.execute(kevscript, kevsModel);
 		
+		// Compare the 2 models and apply differences on initial model
 		ModelCompare compare = new DefaultKevoreeFactory().createModelCompare();
 		compare.merge(localModel, kevsModel).applyOn(localModel);
 		
-		//Ask the platform to apply the new model; register an optional callback to know when the adaptation is finished.
-		
+		// Send the new model
 		sendModel(localModel);
 	}
 	
+	/**
+	 * Send the model specified in the parameter using a WebSocket
+	 * 
+	 * @param model
+	 * @throws IOException
+	 */
 	private void sendModel(ContainerRoot model) throws IOException {
 		
+		// Serialize the model as JSON
 		JSONModelSerializer serializer = factory.createJSONSerializer();
 		final String modelStr = serializer.serialize(model);
 		
-		// send with WebSocket to host:port:path
+		// send with WebSocket to host:port
 		new WebSocketClient(URI.create("ws://"+getNodesNameAndIpAddressFromKevScript().get(getMasterNodeName())+":"+getMasterNodePort())) {
 			
 			@Override
 			public void onOpen() {
-				// t'es connecté au master node sur le fragment du group
 				this.send("push/"+modelStr);
 				try {
 					this.close();
@@ -112,7 +120,10 @@ public class KevoreeHelper {
 	/**
 	 * Return a HashMap<String,TypeDefinition> with the names and the TypeDefinition of the nodes within the KevScript
 	 * 
-	 * @return a HashMap<String,TypeDefinition> with the names and the TypeDefinition of the nodes within the KevScript
+	 * @return 
+	 * 		HashMap<String,TypeDefinition> with the names and the TypeDefinition of the nodes within the KevScript
+	 * 			Keys : Node names
+	 * 			Values : TypeDefinition
 	 */
 	public Map<String,TypeDefinition> getNodesNameAndTypeDefFromKevScript() {
 		List<ContainerNode> nodes = currentModel.getNodes();
@@ -123,6 +134,12 @@ public class KevoreeHelper {
 		return nodesNameAndTypeDef;
 	}
 
+	/**
+	 * Get the name of the master node
+	 * 
+	 * @return
+	 * 		The name of the master node
+	 */
 	public String getMasterNodeName(){
 		String masterNode = "";
 
@@ -139,6 +156,14 @@ public class KevoreeHelper {
 		return masterNode;
 	}
 
+	/**
+	 * Return a HashMap<String,String> with the names and the IP address of the nodes within the KevScript
+	 * 
+	 * @return 
+	 * 		HashMap<String,String> with the names and the IP address of the nodes within the KevScript
+	 * 			Keys : Node names
+	 * 			Values : IP address
+	 */
 	public Map<String,String> getNodesNameAndIpAddressFromKevScript(){
 		List<ContainerNode> nodes = currentModel.getNodes();
 		Map<String,String> nodesNameAndIpAddress = new HashMap<String,String>();
@@ -148,6 +173,12 @@ public class KevoreeHelper {
 		return nodesNameAndIpAddress;
 	}
 	
+	/**
+	 * Get the port of the master node. If it is not specified in the KevScript, it take the default value (9000)
+	 * 
+	 * @return
+	 * 		The port of the master node
+	 */
 	public String getMasterNodePort(){
 		String masterNodePort = null;
 		List<Group> groups = currentModel.getGroups();
@@ -161,6 +192,14 @@ public class KevoreeHelper {
 		return masterNodePort;
 	}
 	
+	/**
+	 * Get the KevScript as String from his path
+	 * 
+	 * @param PathToKevscript
+	 * 		The path of the KevScript
+	 * @return
+	 * 		The KevScript as String
+	 */
 	public static String getKevscriptFromPath(String PathToKevscript){
 		StringBuilder sbBaseKevScript = new StringBuilder();
 		try (Stream<String> stream = Files.lines(Paths.get(PathToKevscript))) {
@@ -192,7 +231,8 @@ public class KevoreeHelper {
 	/**
 	 * Create a new empty model and attach the factory root to this model
 	 * 
-	 * @return the empty model
+	 * @return 
+	 * 		the empty model
 	 */
 	private ContainerRoot createEmptyContainerRoot() {
 		ContainerRoot model = factory.createContainerRoot();
@@ -200,9 +240,13 @@ public class KevoreeHelper {
 		return model;
 	}
 	
+	/**
+	 * Set the currentModel to the model in parameter
+	 *  
+	 * @param model
+	 * 		The new model
+	 */
 	private void setCurrentModel(ContainerRoot model){
 		this.currentModel = model;
 	}
-	
-
 }
