@@ -6,6 +6,8 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import javax.swing.JButton;
 import javax.swing.JFileChooser;
@@ -155,6 +157,8 @@ public class GUI extends JFrame implements ActionListener{
 
 			Map<String,TypeDefinition> nodesNameAndTypeDef = kh.getNodesNameAndTypeDefFromKevScript();
 			Map<String,String> nodesNameAndIp = kh.getNodesNameAndIpAddressFromKevScript();
+			
+			ExecutorService executorService = Executors.newFixedThreadPool(nodesNameAndIp.keySet().size());
 
 			for (String nodeName : nodesNameAndTypeDef.keySet()) {
 
@@ -179,7 +183,7 @@ public class GUI extends JFrame implements ActionListener{
 							eJS.printStackTrace();
 						}
 					};
-					new Thread(taskStartContainerJsNode).start();
+					executorService.execute(taskStartContainerJsNode);
 				}
 				if(nodesNameAndTypeDef.get(nodeName).getName().equals("JavaNode")){
 					Runnable taskStartContainerJavaNode = () -> {
@@ -202,7 +206,7 @@ public class GUI extends JFrame implements ActionListener{
 							eJava.printStackTrace();
 						}
 					};
-					new Thread(taskStartContainerJavaNode).start();
+					executorService.execute(taskStartContainerJavaNode);
 				}
 			}
 
