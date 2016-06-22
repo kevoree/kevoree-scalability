@@ -11,20 +11,36 @@ import com.github.dockerjava.api.model.Frame;
 import com.github.dockerjava.api.model.Network;
 import com.github.dockerjava.api.model.Volume;
 import com.github.dockerjava.core.DockerClientBuilder;
-import com.github.dockerjava.core.DockerClientConfig;
 import com.github.dockerjava.core.command.LogContainerResultCallback;
 
 public class DockerHelper{
 
+	/**
+	 * Initialize docker client
+	 */
 	private static DockerClient dockerClient = DockerClientBuilder.getInstance().build();
-
+	
+	/**
+	 * String list of container name for remove all the container started with startContainerJavaNode() and startContainerJsNode()
+	 */
 	private static List<String> containerList = new ArrayList<String>();
 
+	/**
+	 * Volume to bind within the container
+	 * 
+	 * @param
+	 * 		Path of the KevScript within the container
+	 */
 	private static Volume volumeKsContainerPath = new Volume("/root/model.kevs");
 	
+	/**
+	 * Network name created according to the IPs specified in the Kevscript.
+	 * You MUST provide a way to connect to this node from outside like that in the KevScript :
+	 * network jsNode.ip.lo 10.100.101.2
+	 */
 	private static String networkName = "";
 
-	private static synchronized  void createNetwork(String ip){
+	private static synchronized void createNetwork(String ip){
 		String[] splittedArray = ip.split("\\.");
 		String firstThreeSegments = splittedArray [0] + "." + splittedArray [1] + "." + splittedArray [2] + ".";
 		networkName = firstThreeSegments+"kevoreeScalability";
@@ -47,7 +63,16 @@ public class DockerHelper{
 		}
 	}
 
-
+	/**
+	 * Start a JavaScript node within a Docker container
+	 * 
+	 * @param nodeName
+	 * 		The name of your node specified in the KevScript
+	 * @param ksPath
+	 * 		The KevScript path
+	 * @param ip
+	 * 		The IP address of the node
+	 */
 	public static void startContainerJsNode(String nodeName, String ksPath, String ip){
 		createNetwork(ip);
 		CreateContainerResponse container = dockerClient.createContainerCmd("savak/kevoree-js:snapshot")
@@ -64,6 +89,16 @@ public class DockerHelper{
 		.exec();
 	}
 
+	/**
+	 * Start a Java node within a Docker container
+	 * 
+	 * @param nodeName
+	 * 		The name of your node specified in the KevScript
+	 * @param ksPath
+	 * 		The KevScript path
+	 * @param ip
+	 * 		The IP address of the node
+	 */
 	public static void startContainerJavaNode(String nodeName, String ksPath, String ip){
 		createNetwork(ip);
 		CreateContainerResponse container = dockerClient.createContainerCmd("savak/kevoree-java")
@@ -80,6 +115,9 @@ public class DockerHelper{
 		.exec();
 	}
 
+	/**
+	 * Remove all the container started with startContainerJavaNode() and startContainerJsNode()
+	 */
 	public static void removeAllContainer(){
 		for (String containerId : containerList) {
 			dockerClient.removeContainerCmd(containerId)
@@ -88,11 +126,24 @@ public class DockerHelper{
 		}
 	}
 	
+	/**
+	 * Remove the network created by createNetwork(String ip)
+	 */
 	public static void removeNetwork(){
 		dockerClient.removeNetworkCmd(networkName)
 		.exec();
 	}
 
+	/**
+	 * Get the logs of a container
+	 * 
+	 * @param containerId
+	 * @return 
+	 * 		The logs of the container specified in the parameter
+	 * @throws Exception
+	 * 
+	 * FIX ME : return logs while container is running
+	 */
 	public static String getLogs(String containerId) throws Exception {
 		LogContainerTestCallback  loggingCallback = new LogContainerTestCallback(true); // borrowed from AbstractDockerClientTest
 		dockerClient.logContainerCmd(containerId)
