@@ -16,18 +16,7 @@ import com.github.dockerjava.core.command.LogContainerResultCallback;
 
 public class DockerHelper{
 
-	private static DockerClientConfig defaultConfig = DockerClientConfig.createDefaultConfigBuilder()
-			.withDockerHost("unix:///var/run/docker.sock")
-			.withDockerTlsVerify(false)
-			.withDockerConfig("/home/user/.docker")
-			.withApiVersion("1.23")
-			.withRegistryUrl("https://index.docker.io/v1/")
-			.withRegistryUsername("savak")
-			.withRegistryPassword("puissance51")
-			.withRegistryEmail("marvin.billaud@gmail.com")
-			.build();
-
-	private static DockerClient dockerClient = DockerClientBuilder.getInstance(defaultConfig).build();
+	private static DockerClient dockerClient = DockerClientBuilder.getInstance().build();
 
 	private static List<String> containerList = new ArrayList<String>();
 

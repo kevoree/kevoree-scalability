@@ -1,10 +1,5 @@
 package fr.irisa.kevoree;
 
-import java.awt.Cursor;
-import java.awt.event.WindowAdapter;
-import java.awt.event.WindowEvent;
-import java.io.IOException;
-
 /**
  *
  *
@@ -17,7 +12,7 @@ public class App
 		System.out.println("Running Kevoree-Scalability");
 		System.out.println("===========================");
 
-		GUI window = new GUI();
+		new GUI();
 		
 		Runtime.getRuntime().addShutdownHook(new Thread() {
 			@Override

@@ -21,33 +21,47 @@ import org.kevoree.TypeDefinition;
 
 
 /**
- * Created by Savak on 26/05/16.
+ * Graphical User Interface class and actionPerformed by buttons
+ * 
+ * @author Savak
+ * @version 1.0
  */
 
 public class GUI extends JFrame implements ActionListener{
 
-	/**
-	 * 
-	 */
 	private static final long serialVersionUID = 1L;
 	
+	/**
+	 * Kevscript path and script
+	 */
 	private String baseKevScriptPath;
 	private String baseKevScript;
 	private String updatedKevScriptPath;
 	private String updatedKevScript;
 
+	/**
+	 * Instance of KevoreeHelper for KevScript processing
+	 */
 	private KevoreeHelper kh;
 
-	private JLabel labelKevoreeJSPlatform = new JLabel("Kevoree JS Docker containers : ");
-	private JLabel labelKevoreeJavaPlatform = new JLabel("Kevoree Java Docker containers : ");
-	private JLabel labelTestResults = new JLabel("Test results:");
-
+	/**
+	 * Maps<String nodeName, JTextArea logs output>
+	 */
 	private Map<String,JTextArea> textAreaJsOutpoutList = new HashMap<String,JTextArea>();
 	private Map<String,JTextArea> textAreaJavaOutpoutList = new HashMap<String,JTextArea>();
-
+	
+	/**
+	 * Maps<String nodeName, JScrollPane logs output>
+	 */
 	private Map<String,JScrollPane> scrollPaneJsOutpoutList = new HashMap<String,JScrollPane>();
 	private Map<String,JScrollPane> scrollPaneJavaOutpoutList = new HashMap<String,JScrollPane>();
 
+	/**
+	 * GUI components
+	 */
+	private JLabel labelKevoreeJSPlatform = new JLabel("Kevoree JS Docker containers logs : ");
+	private JLabel labelKevoreeJavaPlatform = new JLabel("Kevoree Java Docker containers logs : ");
+	private JLabel labelTestResults = new JLabel("Test results:");
 	private JTextArea textAreaTestResults = new JTextArea();
 	private JScrollPane scrollPaneTestResults= new JScrollPane(textAreaTestResults);
 	private JButton buttonImportBaseKs = new JButton("Import a base KevScript model");
@@ -61,6 +75,9 @@ public class GUI extends JFrame implements ActionListener{
 	private JTabbedPane tabbedPaneJsOutpout = new JTabbedPane();
 	private JTabbedPane tabbedPaneJavaOutpout = new JTabbedPane();
 
+	/**
+	 * GUI constructor
+	 */
 	public GUI() {
 		setTitle("Kevoree-Scalability");
 		setSize(1200, 800);
@@ -111,6 +128,12 @@ public class GUI extends JFrame implements ActionListener{
 		setVisible(true);
 	}
 
+	/**
+	 * Actions performed on buttons
+	 * 
+	 * @param e
+	 * 		ActionEvent performed
+	 */
 	@Override
 	public void actionPerformed(ActionEvent e) {
 
