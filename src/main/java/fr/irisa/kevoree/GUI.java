@@ -47,6 +47,10 @@ public class GUI extends JFrame implements ActionListener{
 	 */
 	private KevoreeHelper kh;
 
+	public KevoreeHelper getKh() {
+		return kh;
+	}
+
 	/**
 	 * Maps<String nodeName, JTextArea logs output>
 	 */
@@ -157,6 +161,9 @@ public class GUI extends JFrame implements ActionListener{
 		if(e.getSource()==buttonRunPlatforms){
 
 			Map<String,TypeDefinition> nodesNameAndTypeDef = kh.getNodesNameAndTypeDefFromKevScript();
+			if(kh.getNodesNameAndIpAddressFromKevScript().size()!=0){
+				
+			}
 			Map<String,String> nodesNameAndIp = kh.getNodesNameAndIpAddressFromKevScript();
 			
 			ExecutorService executorService = Executors.newFixedThreadPool(nodesNameAndIp.keySet().size());
@@ -172,46 +179,46 @@ public class GUI extends JFrame implements ActionListener{
 				if(nodesNameAndTypeDef.get(nodeName).getName().equals("JavascriptNode")){
 					Runnable taskStartContainerJsNode = () -> {
 						DockerHelper.startContainerJsNode(nodeName, baseKevScriptPath, nodesNameAndIp.get(nodeName));
-						textAreaJsOutpoutList.put(nodeName, new JTextArea());
-						scrollPaneJsOutpoutList.put(nodeName, new JScrollPane(textAreaJsOutpoutList.get(nodeName)));
-						tabbedPaneJsOutpout.addTab(nodeName+" container", scrollPaneJsOutpoutList.get(nodeName));
-
-						try {
-							String s;
-							Process processJS = Runtime.getRuntime().exec("docker logs --follow "+nodeName+"Container");
-							BufferedReader br = new BufferedReader(new InputStreamReader(processJS.getInputStream()));
-							while ((s = br.readLine()) != null) {
-								textAreaJsOutpoutList.get(nodeName).append(s+"\n");
-							}
-							processJS.waitFor();
-							System.out.println("exit : " + processJS.exitValue());
-							processJS.destroy();
-						}catch (Exception eJS) {
-							eJS.printStackTrace();
-						}
+//						textAreaJsOutpoutList.put(nodeName, new JTextArea());
+//						scrollPaneJsOutpoutList.put(nodeName, new JScrollPane(textAreaJsOutpoutList.get(nodeName)));
+//						tabbedPaneJsOutpout.addTab(nodeName+" container", scrollPaneJsOutpoutList.get(nodeName));
+//
+//						try {
+//							String s;
+//							Process processJS = Runtime.getRuntime().exec("docker -H tcp://10.0.0.1:4000 logs --follow "+nodeName+"Container");
+//							BufferedReader br = new BufferedReader(new InputStreamReader(processJS.getInputStream()));
+//							while ((s = br.readLine()) != null) {
+//								textAreaJsOutpoutList.get(nodeName).append(s+"\n");
+//							}
+//							processJS.waitFor();
+//							System.out.println("exit : " + processJS.exitValue());
+//							processJS.destroy();
+//						}catch (Exception eJS) {
+//							eJS.printStackTrace();
+//						}
 					};
 					executorService.execute(taskStartContainerJsNode);
 				}
 				if(nodesNameAndTypeDef.get(nodeName).getName().equals("JavaNode")){
 					Runnable taskStartContainerJavaNode = () -> {
 						DockerHelper.startContainerJavaNode(nodeName, baseKevScriptPath, nodesNameAndIp.get(nodeName));		
-						textAreaJavaOutpoutList.put(nodeName, new JTextArea());
-						scrollPaneJavaOutpoutList.put(nodeName, new JScrollPane(textAreaJavaOutpoutList.get(nodeName)));
-						tabbedPaneJavaOutpout.addTab(nodeName+" container", scrollPaneJavaOutpoutList.get(nodeName));
-
-						try {							
-							Process processJava = Runtime.getRuntime().exec("docker logs --follow "+nodeName+"Container");
-							BufferedReader br = new BufferedReader(new InputStreamReader(processJava.getInputStream()));
-							String s = null;
-							while ((s = br.readLine()) != null) {
-								textAreaJavaOutpoutList.get(nodeName).append(s+"\n");
-							}
-							processJava.waitFor();
-							System.out.println("exit : " + processJava.exitValue());
-							processJava.destroy();
-						} catch (Exception eJava) {
-							eJava.printStackTrace();
-						}
+//						textAreaJavaOutpoutList.put(nodeName, new JTextArea());
+//						scrollPaneJavaOutpoutList.put(nodeName, new JScrollPane(textAreaJavaOutpoutList.get(nodeName)));
+//						tabbedPaneJavaOutpout.addTab(nodeName+" container", scrollPaneJavaOutpoutList.get(nodeName));
+//
+//						try {							
+//							Process processJava = Runtime.getRuntime().exec("docker -H tcp://10.0.0.1:4000 logs --follow "+nodeName+"Container");
+//							BufferedReader br = new BufferedReader(new InputStreamReader(processJava.getInputStream()));
+//							String s = null;
+//							while ((s = br.readLine()) != null) {
+//								textAreaJavaOutpoutList.get(nodeName).append(s+"\n");
+//							}
+//							processJava.waitFor();
+//							System.out.println("exit : " + processJava.exitValue());
+//							processJava.destroy();
+//						} catch (Exception eJava) {
+//							eJava.printStackTrace();
+//						}
 					};
 					executorService.execute(taskStartContainerJavaNode);
 				}

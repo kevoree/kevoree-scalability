@@ -13,7 +13,7 @@ public class App
 		System.out.println("===========================");
 
 		new GUI();
-		
+
 		Runtime.getRuntime().addShutdownHook(new Thread() {
 			@Override
 			public void run() {

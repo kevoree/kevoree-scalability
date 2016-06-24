@@ -8,6 +8,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 import com.github.dockerjava.api.DockerClient;
@@ -29,7 +31,7 @@ public class DockerHelper{
 	 * Initialize docker client
 	 */
 	private static DockerClient dockerClient = DockerClientBuilder.getInstance("tcp://10.0.0.1:4000").build();
-	
+
 	/**
 	 * String list of container name for remove all the container started with startContainerJavaNode() and startContainerJsNode()
 	 */
@@ -41,46 +43,46 @@ public class DockerHelper{
 	 * @param
 	 * 		Path of the KevScript within the container
 	 */
-	private static Volume volumeKsContainerPath;
-	
+	private static Volume volumeKsContainerPath = new Volume("/root/model.kevs");
+
 	/**
 	 * Network name created according to the IPs specified in the Kevscript.
 	 * You MUST provide a way to connect to this node from outside like that in the KevScript :
 	 * network jsNode.ip.lo 10.100.101.2
 	 */
 	private static String networkName = "";
-	
+
 	public static final Map<String, List<String>> clusterLogin;
 	static
-    {
+	{
 		clusterLogin = new HashMap<String, List<String>>();
 		clusterLogin.put("10.0.0.1", new ArrayList<String>() {{
-		    add("oem");
-		    add("ubuntu");
+			add("oem");
+			add("ubuntu");
 		}});
 		clusterLogin.put("10.0.0.3", new ArrayList<String>() {{
-		    add("ubuntu");
-		    add("ubuntu");
+			add("ubuntu");
+			add("ubuntu");
 		}});
 		clusterLogin.put("10.0.0.4", new ArrayList<String>() {{
-		    add("oem");
-		    add("ubuntu");
+			add("oem");
+			add("ubuntu");
 		}});
 		clusterLogin.put("10.0.0.5", new ArrayList<String>() {{
-		    add("ubuntu");
-		    add("ubuntu");
+			add("ubuntu");
+			add("ubuntu");
 		}});
 		clusterLogin.put("10.0.0.6", new ArrayList<String>() {{
-		    add("ubuntu");
-		    add("ubuntu");
+			add("ubuntu");
+			add("ubuntu");
 		}});
 		clusterLogin.put("10.0.0.7", new ArrayList<String>() {{
-		    add("ubuntu");
-		    add("ubuntu");
+			add("ubuntu");
+			add("ubuntu");
 		}});
-		
-		
-    }
+
+
+	}
 
 	private static synchronized void createNetwork(String ip){
 		String[] splittedArray = ip.split("\\.");
@@ -116,14 +118,13 @@ public class DockerHelper{
 	 * 		The IP address of the node
 	 */
 	public static void startContainerJsNode(String nodeName, String ksPath, String ip){
-		volumeKsContainerPath = new Volume("/kevoree/"+ksPath.split("/")[ksPath.split("/").length-1]);
 		createNetwork(ip);
 		CreateContainerResponse container = dockerClient.createContainerCmd("savak/kevoree-js")
 				.withNetworkMode(networkName)
 				.withIpv4Address(ip)
 				.withName(nodeName+"Container")
 				.withVolumes(volumeKsContainerPath)
-				.withBinds(new Bind(ksPath, volumeKsContainerPath))
+				.withBinds(new Bind("/kevoree/"+ksPath.split("/")[ksPath.split("/").length-1], volumeKsContainerPath))
 				.withCmd("-n", nodeName, "--kevscript="+volumeKsContainerPath)
 				.exec();
 
@@ -150,7 +151,7 @@ public class DockerHelper{
 				.withIpv4Address(ip)
 				.withName(nodeName+"Container")
 				.withVolumes(volumeKsContainerPath)
-				.withBinds(new Bind(ksPath, volumeKsContainerPath))
+				.withBinds(new Bind("/kevoree/"+ksPath.split("/")[ksPath.split("/").length-1], volumeKsContainerPath))
 				.withCmd("-Dnode.name="+nodeName, "-Dnode.bootstrap="+volumeKsContainerPath)
 				.exec();
 
@@ -158,7 +159,7 @@ public class DockerHelper{
 		dockerClient.startContainerCmd(container.getId())
 		.exec();
 	}
-	
+
 	public static void copyKevsciptToAllClusterNode(String host, String user, String password, String kevscriptPath){
 		String sftpHost = host;
 		//int SFTPPORT = 4000;
@@ -193,17 +194,23 @@ public class DockerHelper{
 	 * Remove all the container started with startContainerJavaNode() and startContainerJsNode()
 	 */
 	public static void removeAllContainer(){
+		ExecutorService executor = Executors.newFixedThreadPool(containerList.size());
 		for (String containerId : containerList) {
-			dockerClient.removeContainerCmd(containerId)
-			.withForce(true)
-			.exec();
+			Runnable taskRemoveContainer = () -> {
+				dockerClient.removeContainerCmd(containerId)
+				.withForce(true)
+				.exec();
+			};
+			executor.execute(taskRemoveContainer);
+			containerList.remove(containerId);
 		}
 	}
-	
+
 	/**
 	 * Remove the network created by createNetwork(String ip)
 	 */
 	public static void removeNetwork(){
+		
 		dockerClient.removeNetworkCmd(networkName)
 		.exec();
 	}
