@@ -44,9 +44,17 @@
 
 		<dependency>
 			<groupId>fr.braindead</groupId>
-    		<artifactId>websocket-client</artifactId>
-    		<version>1.0.0</version>
+			<artifactId>websocket-client</artifactId>
+			<version>1.0.0</version>
 		</dependency>
+
+		<!-- https://mvnrepository.com/artifact/com.jcraft/jsch -->
+		<dependency>
+			<groupId>com.jcraft</groupId>
+			<artifactId>jsch</artifactId>
+			<version>0.1.53</version>
+		</dependency>
+
 	</dependencies>
 
 

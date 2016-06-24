@@ -5,6 +5,7 @@ import java.awt.event.ActionListener;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -160,6 +161,12 @@ public class GUI extends JFrame implements ActionListener{
 			
 			ExecutorService executorService = Executors.newFixedThreadPool(nodesNameAndIp.keySet().size());
 
+			Map<String, List<String>> clusterLogin = DockerHelper.clusterLogin;
+			for (String login : clusterLogin.keySet()) {
+				DockerHelper.copyKevsciptToAllClusterNode(login, clusterLogin.get(login).get(0), clusterLogin.get(login).get(1), baseKevScriptPath);
+			}
+			
+			
 			for (String nodeName : nodesNameAndTypeDef.keySet()) {
 
 				if(nodesNameAndTypeDef.get(nodeName).getName().equals("JavascriptNode")){
