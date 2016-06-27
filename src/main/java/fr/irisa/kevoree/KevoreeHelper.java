@@ -35,42 +35,172 @@ import fr.braindead.websocket.client.WebSocketClient;
 
 public class KevoreeHelper {
 	
-	private final KevoreeFactory factory;
+	private static final KevoreeFactory factory = new DefaultKevoreeFactory();
 
-	private final ModelCloner cloner;
+	private static final ModelCloner cloner = factory.createModelCloner();
 
-	private KevScriptService kevScriptService;
+	private static final KevScriptService kevScriptService = new KevScriptEngine();
 
-	private ContainerRoot currentModel;
+	public static ContainerRoot currentModel = createEmptyContainerRoot();
+
+	/**
+	 * Get the name of the master node
+	 * 
+	 * @return
+	 * 		The name of the master node
+	 */
+	public static String getMasterNodeName(){
+		String masterNodeName = "";
+
+		List<Group> groups = currentModel.getGroups();
+
+		for (Group group : groups) {
+			List<Value> groupDictionary = group.getDictionary().getValues();
+			for (Value value : groupDictionary) {
+				if(value.getName().equals("master")){
+					masterNodeName = value.getValue();
+				}
+			}
+		}
+		return masterNodeName;
+	}
 	
-
-	public KevoreeHelper(String ks) {
-		factory = new DefaultKevoreeFactory();
-
-		cloner = factory.createModelCloner();
-
-		kevScriptService = new KevScriptEngine();
-		
-		ContainerRoot model = createEmptyContainerRoot();
-
-		updateModelFromKevScript(ks, model);
+	/**
+	 * Get the port of the master node. If it is not specified in the KevScript, it take the default value (9000)
+	 * 
+	 * @return
+	 * 		The port of the master node
+	 */
+	public static String getMasterNodePort(){
+		String masterNodePort = null;
+		List<Group> groups = currentModel.getGroups();
+		for (Group group : groups) {
+			try {
+				masterNodePort = group.findFragmentDictionaryByID(getMasterNodeName()).findValuesByID("port").getValue();
+			} catch (NullPointerException e) {
+				masterNodePort = "9000";
+			}
+		}
+		return masterNodePort;
+	}
+	
+	/**
+	 * Return a HashMap<String,TypeDefinition> with the names and the TypeDefinition of the nodes within the KevScript
+	 * 
+	 * @return 
+	 * 		HashMap<String,TypeDefinition> with the names and the TypeDefinition of the nodes within the KevScript
+	 * 			Keys : Node names
+	 * 			Values : TypeDefinition
+	 */
+	public static Map<String,TypeDefinition> getNodesNameAndTypeDefFromKevScript() {
+		List<ContainerNode> nodes = currentModel.getNodes();
+		Map<String,TypeDefinition> nodesNameAndTypeDef = new HashMap<String,TypeDefinition>();
+		for (ContainerNode node : nodes) {
+			nodesNameAndTypeDef.put(node.getName(), node.getTypeDefinition());
+		}
+		return nodesNameAndTypeDef;
 	}
 
-	public void updateModel(String kevscript) throws Exception {		
-
-		// Clone the model to make it changeable
-		ContainerRoot localModel = cloner.clone(currentModel);
-		ContainerRoot kevsModel = createEmptyContainerRoot();
+	/**
+	 * Return a HashMap<String,String> with the names and the IP address of the nodes according to the master node IP
+	 * 
+	 * @return 
+	 * 		HashMap<String,String> with the names and the IP address of the nodes
+	 * 			Keys : Node names
+	 * 			Values : IP address
+	 */
+	public static Map<String,String> getNodesNameAndIpAddressFromKevScript(){
+		List<ContainerNode> nodes = currentModel.getNodes();
+		Map<String,String> nodesNameAndIpAddress = new HashMap<String,String>();
+		String baseIp = "";
 		
-		// Apply the script on the current model, to get a new configuration
-		kevScriptService.execute(kevscript, kevsModel);
+		for (ContainerNode node : nodes) {
+			if(node.getName().equals(getMasterNodeName())){
+				baseIp = node.getNetworkInformation().get(0).getValues().get(0).getValue();
+				nodesNameAndIpAddress.put(node.getName(), baseIp);
+				System.out.println(baseIp);
+			}
+		}
+		for (ContainerNode node : nodes) {
+			if(!node.getName().equals(getMasterNodeName())){
+				int lastIpFragment = Integer.parseInt(baseIp.split("\\.")[3])+1;
+				baseIp = baseIp.split("\\.")[0]+"."+baseIp.split("\\.")[1]+"."+baseIp.split("\\.")[2]+"."+lastIpFragment;
+				Value valueIp = factory.createValue();
+				valueIp.setName("lo");
+				valueIp.setValue(baseIp);
+				List<Value> valueListNetwork = new ArrayList<Value>();
+				valueListNetwork.add(valueIp);
+				NetworkInfo networkInfo = factory.createNetworkInfo();
+				networkInfo.setName("net1");
+				networkInfo.addAllValues(valueListNetwork);
+				node.addNetworkInformation(networkInfo);
+				nodesNameAndIpAddress.put(node.getName(), baseIp);
+			}
+		}
+		return nodesNameAndIpAddress;
+	}
+	
+	/**
+	 * Get the KevScript as String from his path
+	 * 
+	 * @param PathToKevscript
+	 * 		The path of the KevScript
+	 * @return
+	 * 		The KevScript as String
+	 */
+	public static String getKevscriptFromPath(String PathToKevscript){
+		StringBuilder sbBaseKevScript = new StringBuilder();
+		try (Stream<String> stream = Files.lines(Paths.get(PathToKevscript))) {
+			stream.forEach(line -> sbBaseKevScript.append(line+System.lineSeparator()));
+		} catch (IOException ioe) {
+			System.out.println("IO exception.");
+		} 
+		return sbBaseKevScript.toString();
+	}
+
+	/**
+	 * Update a model from KevScript.
+	 * 
+	 * @param ks
+	 *     The Kevscript
+	 * @param model
+	 *     The updated model
+	 */
+	public static void createModelFromKevScript(String ks) {
+		try {
+			kevScriptService.execute(ks, currentModel);	
+		} catch (Exception e) {
+			System.out.println("Invalid KevScript");
+		}
+	}
+
+	/**
+	 * Create a new empty model and attach the factory root to this model
+	 * 
+	 * @return 
+	 * 		the empty model
+	 */
+	private static ContainerRoot createEmptyContainerRoot() {
+		ContainerRoot model = factory.createContainerRoot();
+		factory.root(model);
+		return model;
+	}
+	
+	public static void updateModel(String kevscript) throws Exception {		
+
+		// Clone the current model to make it changeable and initialize an empty container root.
+		ContainerRoot initialModel = cloner.clone(currentModel);
+		ContainerRoot updatedModel = createEmptyContainerRoot();
+		
+		// Apply the script on the updated model to get the new configuration
+		kevScriptService.execute(kevscript, updatedModel);
 		
 		// Compare the 2 models and apply differences on initial model
 		ModelCompare compare = new DefaultKevoreeFactory().createModelCompare();
-		compare.merge(localModel, kevsModel).applyOn(localModel);
+		compare.merge(initialModel, updatedModel).applyOn(initialModel);
 		
 		// Send the new model
-		sendModel(localModel);
+		sendModel(initialModel);
 	}
 	
 	/**
@@ -79,7 +209,7 @@ public class KevoreeHelper {
 	 * @param model
 	 * @throws IOException
 	 */
-	private void sendModel(ContainerRoot model) throws IOException {
+	private static void sendModel(ContainerRoot model) throws IOException {
 		
 		// Serialize the model as JSON
 		JSONModelSerializer serializer = factory.createJSONSerializer();
@@ -117,163 +247,5 @@ public class KevoreeHelper {
 				
 			}
 		};
-	}
-
-	/**
-	 * Return a HashMap<String,TypeDefinition> with the names and the TypeDefinition of the nodes within the KevScript
-	 * 
-	 * @return 
-	 * 		HashMap<String,TypeDefinition> with the names and the TypeDefinition of the nodes within the KevScript
-	 * 			Keys : Node names
-	 * 			Values : TypeDefinition
-	 */
-	public Map<String,TypeDefinition> getNodesNameAndTypeDefFromKevScript() {
-		List<ContainerNode> nodes = currentModel.getNodes();
-		Map<String,TypeDefinition> nodesNameAndTypeDef = new HashMap<String,TypeDefinition>();
-		for (ContainerNode node : nodes) {
-			nodesNameAndTypeDef.put(node.getName(), node.getTypeDefinition());
-		}
-		return nodesNameAndTypeDef;
-	}
-
-	/**
-	 * Get the name of the master node
-	 * 
-	 * @return
-	 * 		The name of the master node
-	 */
-	public String getMasterNodeName(){
-		String masterNode = "";
-
-		List<Group> groups = currentModel.getGroups();
-
-		for (Group group : groups) {
-			List<Value> groupDictionary = group.getDictionary().getValues();
-			for (Value value : groupDictionary) {
-				if(value.getName().equals("master")){
-					masterNode = value.getValue();
-				}
-			}
-		}
-		return masterNode;
-	}
-
-	/**
-	 * Return a HashMap<String,String> with the names and the IP address of the nodes within the KevScript
-	 * 
-	 * @return 
-	 * 		HashMap<String,String> with the names and the IP address of the nodes within the KevScript
-	 * 			Keys : Node names
-	 * 			Values : IP address
-	 */
-	public Map<String,String> getNodesNameAndIpAddressFromKevScript(){
-		List<ContainerNode> nodes = currentModel.getNodes();
-		Map<String,String> nodesNameAndIpAddress = new HashMap<String,String>();
-		String baseIp = "";
-		
-		for (ContainerNode node : nodes) {
-			if(node.getName().equals(getMasterNodeName())){
-				baseIp = node.getNetworkInformation().get(0).getValues().get(0).getValue();
-				System.out.println(baseIp);
-				System.out.println(baseIp.split("\\.").length);
-				nodesNameAndIpAddress.put(node.getName(), baseIp);
-			}
-		}
-		for (ContainerNode node : nodes) {
-			if(node.getName()!=getMasterNodeName()){
-				int lastIpFragment = Integer.parseInt(baseIp.split("\\.")[3])+1;
-				baseIp = baseIp.split("\\.")[0]+"."+baseIp.split("\\.")[1]+"."+baseIp.split("\\.")[2]+"."+lastIpFragment;
-				Value valueIp = factory.createValue();
-				valueIp.setName("lo");
-				valueIp.setValue(baseIp);
-				List<Value> valueListNetwork = new ArrayList<Value>();
-				valueListNetwork.add(valueIp);
-				NetworkInfo networkInfo = factory.createNetworkInfo();
-				networkInfo.setName("net1");
-				networkInfo.addAllValues(valueListNetwork);
-				node.addNetworkInformation(networkInfo);
-				nodesNameAndIpAddress.put(node.getName(), baseIp);
-				System.out.println(baseIp);
-			}
-		}
-		
-		return nodesNameAndIpAddress;
-	}
-	
-	/**
-	 * Get the port of the master node. If it is not specified in the KevScript, it take the default value (9000)
-	 * 
-	 * @return
-	 * 		The port of the master node
-	 */
-	public String getMasterNodePort(){
-		String masterNodePort = null;
-		List<Group> groups = currentModel.getGroups();
-		for (Group group : groups) {
-			try {
-				masterNodePort = group.findFragmentDictionaryByID(getMasterNodeName()).findValuesByID("port").getValue();
-			} catch (NullPointerException e) {
-				masterNodePort = "9000";
-			}
-		}
-		return masterNodePort;
-	}
-	
-	/**
-	 * Get the KevScript as String from his path
-	 * 
-	 * @param PathToKevscript
-	 * 		The path of the KevScript
-	 * @return
-	 * 		The KevScript as String
-	 */
-	public static String getKevscriptFromPath(String PathToKevscript){
-		StringBuilder sbBaseKevScript = new StringBuilder();
-		try (Stream<String> stream = Files.lines(Paths.get(PathToKevscript))) {
-			stream.forEach(line -> sbBaseKevScript.append(line+System.lineSeparator()));
-		} catch (IOException IOe) {
-			IOe.printStackTrace();
-		}
-		return sbBaseKevScript.toString();
-	}
-
-	/**
-	 * Update a model from KevScript.
-	 * 
-	 * @param ks
-	 *     The Kevscript
-	 * @param model
-	 *     The updated model
-	 */
-	private void updateModelFromKevScript(String ks, ContainerRoot model) {
-		try {
-			kevScriptService.execute(ks, model);
-			setCurrentModel(model);			
-		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-	}
-
-	/**
-	 * Create a new empty model and attach the factory root to this model
-	 * 
-	 * @return 
-	 * 		the empty model
-	 */
-	private ContainerRoot createEmptyContainerRoot() {
-		ContainerRoot model = factory.createContainerRoot();
-		factory.root(model);
-		return model;
-	}
-	
-	/**
-	 * Set the currentModel to the model in parameter
-	 *  
-	 * @param model
-	 * 		The new model
-	 */
-	private void setCurrentModel(ContainerRoot model){
-		this.currentModel = model;
 	}
 }

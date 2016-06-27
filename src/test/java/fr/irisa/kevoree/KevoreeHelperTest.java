@@ -16,8 +16,9 @@ public class KevoreeHelperTest {
 		
 		String ks = "add javaNode : JavaNode\n" + "add jsNode : JavascriptNode\n" + "add group : WSGroup\n"
 				+ "set group.master = 'jsNode'\n" + "attach javaNode, jsNode group";
-		KevoreeHelper modelAdaptation = new KevoreeHelper(ks);
-		String master = modelAdaptation.getMasterNodeName();
+	
+		KevoreeHelper.createModelFromKevScript(ks);
+		String master = KevoreeHelper.getMasterNodeName();
 
 		String trueMaster = "jsNode";
 
@@ -37,9 +38,8 @@ public class KevoreeHelperTest {
 		}
 		String ks = sbKevScript.toString();
 		
-		KevoreeHelper kh = new KevoreeHelper(ks);
-
-		Map<String,String> nodesAndIp = kh.getNodesNameAndIpAddressFromKevScript();
+		KevoreeHelper.createModelFromKevScript(ks);
+		Map<String,String> nodesAndIp = KevoreeHelper.getNodesNameAndIpAddressFromKevScript();
 		
 		for (String nodeName : nodesAndIp.keySet()) {
 			System.out.println(nodesAndIp.get(nodeName));
@@ -60,10 +60,9 @@ public class KevoreeHelperTest {
 			IOe.printStackTrace();
 		}
 		String ks = sbKevScript.toString();
-		
-		KevoreeHelper kh = new KevoreeHelper(ks);
 
-		String nodeMesterPort = kh.getMasterNodePort();
+		KevoreeHelper.createModelFromKevScript(ks);
+		String nodeMesterPort = KevoreeHelper.getMasterNodePort();
 		
 		System.out.println("Node master port = "+nodeMesterPort);
 		
