@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -12,6 +13,7 @@ import java.util.stream.Stream;
 import org.kevoree.ContainerNode;
 import org.kevoree.ContainerRoot;
 import org.kevoree.Group;
+import org.kevoree.NetworkInfo;
 import org.kevoree.TypeDefinition;
 import org.kevoree.Value;
 import org.kevoree.api.KevScriptService;
@@ -167,8 +169,30 @@ public class KevoreeHelper {
 	public Map<String,String> getNodesNameAndIpAddressFromKevScript(){
 		List<ContainerNode> nodes = currentModel.getNodes();
 		Map<String,String> nodesNameAndIpAddress = new HashMap<String,String>();
+		String baseIp = "";
+		
 		for (ContainerNode node : nodes) {
-			nodesNameAndIpAddress.put(node.getName(), node.getNetworkInformation().get(0).getValues().get(0).getValue());
+			if(node.getName().equals(getMasterNodeName())){
+				baseIp = node.getNetworkInformation().get(0).getValues().get(0).getValue();
+				nodesNameAndIpAddress.put(node.getName(), baseIp);
+				System.out.println(baseIp);
+			}
+		}
+		for (ContainerNode node : nodes) {
+			if(!node.getName().equals(getMasterNodeName())){
+				int lastIpFragment = Integer.parseInt(baseIp.split("\\.")[3])+1;
+				baseIp = baseIp.split("\\.")[0]+"."+baseIp.split("\\.")[1]+"."+baseIp.split("\\.")[2]+"."+lastIpFragment;
+				Value valueIp = factory.createValue();
+				valueIp.setName("lo");
+				valueIp.setValue(baseIp);
+				List<Value> valueListNetwork = new ArrayList<Value>();
+				valueListNetwork.add(valueIp);
+				NetworkInfo networkInfo = factory.createNetworkInfo();
+				networkInfo.setName("net1");
+				networkInfo.addAllValues(valueListNetwork);
+				node.addNetworkInformation(networkInfo);
+				nodesNameAndIpAddress.put(node.getName(), baseIp);
+			}
 		}
 		return nodesNameAndIpAddress;
 	}

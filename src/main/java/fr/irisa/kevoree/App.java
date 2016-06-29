@@ -19,6 +19,7 @@ public class App
 			public void run() {
 				DockerHelper.removeAllContainer();
 				DockerHelper.removeNetwork();
+				
 			}
 		});
 	}

@@ -6,6 +6,7 @@ import java.util.concurrent.TimeUnit;
 
 import com.github.dockerjava.api.DockerClient;
 import com.github.dockerjava.api.command.CreateContainerResponse;
+import com.github.dockerjava.api.exception.NotFoundException;
 import com.github.dockerjava.api.model.Bind;
 import com.github.dockerjava.api.model.Frame;
 import com.github.dockerjava.api.model.Network;
@@ -38,7 +39,7 @@ public class DockerHelper{
 	 * You MUST provide a way to connect to this node from outside like that in the KevScript :
 	 * network jsNode.ip.lo 10.100.101.2
 	 */
-	private static String networkName = "";
+	private static String networkName;
 
 	private static synchronized void createNetwork(String ip){
 		String[] splittedArray = ip.split("\\.");
@@ -107,7 +108,7 @@ public class DockerHelper{
 				.withName(nodeName+"Container")
 				.withVolumes(volumeKsContainerPath)
 				.withBinds(new Bind(ksPath, volumeKsContainerPath))
-				.withCmd("-Dnode.name="+nodeName, "-Dnode.bootstrap="+volumeKsContainerPath)
+				.withCmd("-Dkevoree.version=5.3.2-SNAPSHOT", "-Dnode.name="+nodeName, "-Dnode.bootstrap="+volumeKsContainerPath)
 				.exec();
 
 		containerList.add(container.getId());
@@ -130,8 +131,12 @@ public class DockerHelper{
 	 * Remove the network created by createNetwork(String ip)
 	 */
 	public static void removeNetwork(){
-		dockerClient.removeNetworkCmd(networkName)
-		.exec();
+		try {
+			dockerClient.removeNetworkCmd(networkName)
+			.exec();
+		} catch (NotFoundException e) {
+			System.out.println("Neither network to remove.");
+		}
 	}
 
 	/**
