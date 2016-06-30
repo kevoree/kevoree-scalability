@@ -164,9 +164,9 @@ public class GUI extends JFrame implements ActionListener{
 			// Implementation of an ExecutorService
 			ExecutorService executorService = Executors.newFixedThreadPool(nodesNameAndIp.keySet().size());
 
-			Map<String, List<String>> clusterLogin = DockerHelper.clusterLogin;
+			Map<String, List<String>> clusterLogin = ClusterHelper.clusterLogin;
 			for (String login : clusterLogin.keySet()) {
-				DockerHelper.copyKevsciptToAllClusterNode(login, clusterLogin.get(login).get(0), clusterLogin.get(login).get(1), baseKevScriptPath);
+				ClusterHelper.copyKevsciptToAllClusterNode(login, clusterLogin.get(login).get(0), clusterLogin.get(login).get(1), baseKevScriptPath);
 			}
 			
 			
