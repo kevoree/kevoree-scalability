@@ -129,7 +129,7 @@ public class DockerHelper{
 	 * 		The IP address of the node
 	 */
 	public static void startContainerJsNode(String nodeName, String ksPath, String ip){
-		CreateContainerResponse container = dockerClient.createContainerCmd("savak/kevoree-js")
+		CreateContainerResponse container = dockerClient.createContainerCmd("kevoree/js")
 				.withNetworkMode(networkName)
 				.withIpv4Address(ip)
 				.withName(nodeName+"Container")
@@ -155,7 +155,7 @@ public class DockerHelper{
 	 */
 	public static void startContainerJavaNode(String nodeName, String ksPath, String ip){
 		volumeKsContainerPath = new Volume("/kevoree/"+ksPath.split("/")[ksPath.split("/").length-1]);
-		CreateContainerResponse container = dockerClient.createContainerCmd("savak/kevoree-java")
+		CreateContainerResponse container = dockerClient.createContainerCmd("kevoree/java")
 				.withNetworkMode(networkName)
 				.withIpv4Address(ip)
 				.withName(nodeName+"Container")
