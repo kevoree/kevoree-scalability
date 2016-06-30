@@ -39,7 +39,7 @@ This project contains two static class for help the development with Kevoree and
 	        // Create the model according to the kevscript in param
 		KevoreeHelper.createModelFromKevScript(kevscript);
 		
-		// get the name of the master node
+		// Get the name of the master node
 		String masterNodeName = KevoreeHelper.getMasterNodeName();
 		
 		// Get a Map with nodes name as keys and type definition as value
@@ -56,16 +56,16 @@ This project contains two static class for help the development with Kevoree and
 	
 	    public static void main(String[] args) {
 	
-    			// Create the overlay network according to a particular IP
-    			DockerHelper.createNetwork(ip);
-    			
-    			// Start a container from image kevoree/js with a specific JS node
-    			DockerHelper.startContainerJsNode(nodeName, kevscriptPath, nodeIP);
-    			
-    			// Start a container from image kevoree/java with a specific Java node
-    			DockerHelper.startContainerJavaNode(nodeName, kevscriptPath, nodeIP);
-    			
-    			// Remove the overlay network previously created
-    			DockerHelper.removeNetwork();
+    		// Create the overlay network according to a particular IP
+    		DockerHelper.createNetwork(ip);
+    		
+    		// Start a container from image kevoree/js with a specific JS node
+    		DockerHelper.startContainerJsNode(nodeName, kevscriptPath, nodeIP);
+    		
+    		// Start a container from image kevoree/java with a specific Java node
+    		DockerHelper.startContainerJavaNode(nodeName, kevscriptPath, nodeIP);
+    		
+    		// Remove the overlay network previously created
+    		DockerHelper.removeNetwork();
 	    }
 	}
