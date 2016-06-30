@@ -29,10 +29,10 @@ This project contains two static class for help the development with Kevoree and
 
 ### KevoreeHelper
 
-	public class Application {
-	
-	    public static void main(String[] args) {
-	    
+public class Application {
+
+    	public static void main(String[] args) {
+    
 		// Get the KevScript from his file path 
 		String kevscript = KevoreeHelper.getKevscriptFromPath(kevscriptPath);
 		
@@ -47,14 +47,14 @@ This project contains two static class for help the development with Kevoree and
 		
 		// Get a Map with nodes name as keys and IP address as value
 		Map<String,String> nodesNameAndIp = KevoreeHelper.getNodesNameAndIpAddressFromKevScript();
-	    }
 	}
+}
 	
-	### DockerHelper
+### DockerHelper
 
-	public class Application {
+public class Application {
 	
-	    public static void main(String[] args) {
+	public static void main(String[] args) {
 	
     		// Create the overlay network according to a particular IP
     		DockerHelper.createNetwork(ip);
@@ -67,5 +67,5 @@ This project contains two static class for help the development with Kevoree and
     		
     		// Remove the overlay network previously created
     		DockerHelper.removeNetwork();
-	    }
-	}
+    	}
+}
