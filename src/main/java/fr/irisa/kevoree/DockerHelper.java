@@ -27,6 +27,7 @@ import com.jcraft.jsch.ChannelSftp;
 import com.jcraft.jsch.JSch;
 import com.jcraft.jsch.Session;
 
+@SuppressWarnings("serial")
 public class DockerHelper{
 
 	/**
@@ -53,13 +54,6 @@ public class DockerHelper{
 	private static Volume volumeKsContainerPath = new Volume("/root/model.kevs");
 
 	/**
-	 * Network name created according to the master node IP specified in the Kevscript.
-	 * You MUST provide a way to connect to this node from outside like that in the KevScript :
-	 * network jsNode.ip.lo 10.100.101.2
-	 */
-	private static String networkName = "";
-
-	/**
 	 * This Map represent the necessary informations of the machine of the cluster
 	 * Pattern : clusterLogin Item = [ IP , [ UserName , UserPassword ] ]
 	 */
@@ -67,7 +61,7 @@ public class DockerHelper{
 	static
 	{
 		clusterLogin = new HashMap<String, List<String>>();
-		
+
 		clusterLogin.put("10.0.0.1", new ArrayList<String>() {{
 			add("oem");
 			add("ubuntu");
@@ -94,28 +88,16 @@ public class DockerHelper{
 		}});
 	}
 
-	
-	public static void createNetwork(String ip){
-		String[] splittedArray = ip.split("\\.");
-		String firstThreeSegments = splittedArray [0] + "." + splittedArray [1] + "." + splittedArray [2] + ".";
-		networkName = firstThreeSegments+"kevoreeScalability";
-
-		boolean alreadyExist = false;
-		List<Network> networks = dockerClient.listNetworksCmd().exec();
-		for (Network network : networks) {
-			if(network.getName().equals(networkName)){
-				alreadyExist = true;
-			}
-		}
-
-		if(!alreadyExist){
-			dockerClient.createNetworkCmd()
-			.withIpam(new Network.Ipam()
-					.withConfig(new Network.Ipam.Config()
-							.withSubnet(firstThreeSegments+"0/24")))
-			.withName(firstThreeSegments+"kevoreeScalability")
-			.exec();
-		}
+	/**
+	 * Create a network for the container communication
+	 */
+	public static void createNetwork(){
+		dockerClient.createNetworkCmd()
+		.withIpam(new Network.Ipam()
+				.withConfig(new Network.Ipam.Config()
+						.withSubnet("100.100.0.0/16")))
+		.withName("KevoreeScalabilityNetwork")
+		.exec();
 	}
 
 	/**
@@ -130,7 +112,7 @@ public class DockerHelper{
 	 */
 	public static void startContainerJsNode(String nodeName, String ksPath, String ip){
 		CreateContainerResponse container = dockerClient.createContainerCmd("kevoree/js")
-				.withNetworkMode(networkName)
+				.withNetworkMode("KevoreeScalabilityNetwork")
 				.withIpv4Address(ip)
 				.withName(nodeName+"Container")
 				.withVolumes(volumeKsContainerPath)
@@ -156,7 +138,7 @@ public class DockerHelper{
 	public static void startContainerJavaNode(String nodeName, String ksPath, String ip){
 		volumeKsContainerPath = new Volume("/kevoree/"+ksPath.split("/")[ksPath.split("/").length-1]);
 		CreateContainerResponse container = dockerClient.createContainerCmd("kevoree/java")
-				.withNetworkMode(networkName)
+				.withNetworkMode("KevoreeScalabilityNetwork")
 				.withIpv4Address(ip)
 				.withName(nodeName+"Container")
 				.withVolumes(volumeKsContainerPath)
@@ -202,7 +184,7 @@ public class DockerHelper{
 	/**
 	 * Remove all the container started with startContainerJavaNode() and startContainerJsNode()
 	 */
-	public static void removeAllContainer(GUI gui){
+	public static void removeAllContainer(){
 		try {
 			containerListSize=containerList.size();
 			ExecutorService executor = Executors.newFixedThreadPool(containerListSize);
@@ -210,30 +192,27 @@ public class DockerHelper{
 			for (String containerId : containerList) {
 				Callable<Void> taskRemoveContainer = () -> {
 					containerListSize = containerListSize-1;					
-					gui.getTextAreaWorkflow().append("Removing container with ID "+containerId);
-					gui.getLabelNumberOfRunningContainer().setText("Number of running container : "+containerListSize);
-					gui.getLabelNumberOfRunningContainer().setBounds(20, 660, gui.getLabelNumberOfRunningContainer().getPreferredSize().width, gui.getLabelNumberOfRunningContainer().getPreferredSize().height);
 					return dockerClient.removeContainerCmd(containerId)
-					.withForce(true)
-					.exec();
-					
+							.withForce(true)
+							.exec();
+
 				};
 				taskslist.add(taskRemoveContainer);
 			}
 			List<Future<Void>> futures = executor.invokeAll(taskslist);
-			
+
 			boolean allContainerRemoved = false;
 			while (!allContainerRemoved) {
 				for(Future<Void> future : futures){
-				    if (future.isDone()){
-				    	allContainerRemoved=true;
-				    }else{
-				    	allContainerRemoved=false;
-				    	break;
-				    }
+					if (future.isDone()){
+						allContainerRemoved=true;
+					}else{
+						allContainerRemoved=false;
+						break;
+					}
 				}
 			}
-			
+
 		} catch (IllegalArgumentException e) {
 			System.out.println("Neither container to remove");
 		} catch (InterruptedException e) {
@@ -247,12 +226,12 @@ public class DockerHelper{
 	 */
 	public static void removeNetwork(){
 		try {
-			dockerClient.removeNetworkCmd(networkName)
+			dockerClient.removeNetworkCmd("KevoreeScalabilityNetwork")
 			.exec();
 		} catch (NotFoundException e) {
 			System.out.println("Neither network to remove");
 		}
-		
+
 	}
 
 	/**

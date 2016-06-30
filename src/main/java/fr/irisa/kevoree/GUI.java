@@ -156,7 +156,7 @@ public class GUI extends JFrame implements ActionListener{
 			Map<String,String> nodesNameAndIp = KevoreeHelper.getNodesNameAndIpAddressFromKevScript();
 			
 			// Create the overlay network according to the IP of the master node
-			DockerHelper.createNetwork(nodesNameAndIp.get(KevoreeHelper.getMasterNodeName()));
+			DockerHelper.createNetwork();
 			
 			labelMasterNodeNameAndIp.setText(labelMasterNodeNameAndIp.getText()+masterNodeName+" --> "+nodesNameAndIp.get(masterNodeName));
 			labelMasterNodeNameAndIp.setBounds(20, 680, labelMasterNodeNameAndIp.getPreferredSize().width, labelMasterNodeNameAndIp.getPreferredSize().height);
@@ -175,7 +175,7 @@ public class GUI extends JFrame implements ActionListener{
 				if(nodesNameAndTypeDef.get(nodeName).getName().equals("JavascriptNode")){
 					Runnable taskStartContainerJsNode = () -> {
 						DockerHelper.startContainerJsNode(nodeName, baseKevScriptPath, nodesNameAndIp.get(nodeName));
-						textAreaWorkflow.append("Starting "+nodeName+"Container\n");
+						textAreaWorkflow.append("Starting "+nodeName+"Container --> IP : "+nodesNameAndIp.get(nodeName)+"\n");
 						numberOfRunningContainer=numberOfRunningContainer+1;
 						labelNumberOfRunningContainer.setText("Number of running container : "+numberOfRunningContainer);
 						labelNumberOfRunningContainer.setBounds(20, 660, labelNumberOfRunningContainer.getPreferredSize().width, labelNumberOfRunningContainer.getPreferredSize().height);
@@ -186,7 +186,7 @@ public class GUI extends JFrame implements ActionListener{
 				if(nodesNameAndTypeDef.get(nodeName).getName().equals("JavaNode")){
 					Runnable taskStartContainerJavaNode = () -> {
 						DockerHelper.startContainerJavaNode(nodeName, baseKevScriptPath, nodesNameAndIp.get(nodeName));
-						textAreaWorkflow.append("Starting "+nodeName+"Container\n");
+						textAreaWorkflow.append("Starting "+nodeName+"Container --> IP : "+nodesNameAndIp.get(nodeName)+"\n");
 						numberOfRunningContainer=numberOfRunningContainer+1;
 						labelNumberOfRunningContainer.setText("Number of running container : "+numberOfRunningContainer);
 						labelNumberOfRunningContainer.setBounds(20, 660, labelNumberOfRunningContainer.getPreferredSize().width, labelNumberOfRunningContainer.getPreferredSize().height);
