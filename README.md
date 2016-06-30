@@ -33,10 +33,10 @@ This project contains two static class for help the development with Kevoree and
 	
 	    public static void main(String[] args) {
 	    
-	        // Get the KevScript from his file path 
-	        String kevscript = KevoreeHelper.getKevscriptFromPath(kevscriptPath);
-	        
-	        // Create the model according to the kevscript in param
+		// Get the KevScript from his file path 
+		String kevscript = KevoreeHelper.getKevscriptFromPath(kevscriptPath);
+		
+		// Create the model according to the kevscript in param
 		KevoreeHelper.createModelFromKevScript(kevscript);
 		
 		// Get the name of the master node
