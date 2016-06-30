@@ -37,16 +37,16 @@ This project contains two static class for help the development with Kevoree and
 	        String kevscript = KevoreeHelper.getKevscriptFromPath(kevscriptPath);
 	        
 	        // Create the model according to the kevscript in param
-				  KevoreeHelper.createModelFromKevScript(kevscript);
-				  
-				  // get the name of the master node
-			    String masterNodeName = KevoreeHelper.getMasterNodeName();
-
-    			// Get a Map with nodes name as keys and type definition as value
-    			Map<String,TypeDefinition> nodesNameAndTypeDef = KevoreeHelper.getNodesNameAndTypeDefFromKevScript();
-    
-    			// Get a Map with nodes name as keys and IP address as value
-    			Map<String,String> nodesNameAndIp = KevoreeHelper.getNodesNameAndIpAddressFromKevScript();
+		KevoreeHelper.createModelFromKevScript(kevscript);
+		
+		// get the name of the master node
+		String masterNodeName = KevoreeHelper.getMasterNodeName();
+		
+		// Get a Map with nodes name as keys and type definition as value
+		Map<String,TypeDefinition> nodesNameAndTypeDef = KevoreeHelper.getNodesNameAndTypeDefFromKevScript();
+		
+		// Get a Map with nodes name as keys and IP address as value
+		Map<String,String> nodesNameAndIp = KevoreeHelper.getNodesNameAndIpAddressFromKevScript();
 	    }
 	}
 	
