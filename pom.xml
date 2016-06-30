@@ -12,18 +12,19 @@
 
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<version>5.3.1</version>
 	</properties>
 
 	<dependencies>
 		<dependency>
 			<groupId>org.kevoree</groupId>
 			<artifactId>org.kevoree.api</artifactId>
-			<version>5.3.1</version>
+			<version>${version}</version>
 		</dependency>
 		<dependency>
 			<groupId>org.kevoree</groupId>
 			<artifactId>org.kevoree.core</artifactId>
-			<version>5.3.1</version>
+			<version>${version}</version>
 		</dependency>
 		<dependency>
 			<groupId>junit</groupId>
