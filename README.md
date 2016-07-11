@@ -34,20 +34,20 @@ public class Application {
 
     	public static void main(String[] args) {
     
-		// Get the KevScript from his file path 
-		String kevscript = KevoreeHelper.getKevscriptFromPath(kevscriptPath);
-		
-		// Create the model according to the kevscript in param
-		KevoreeHelper.createModelFromKevScript(kevscript);
-		
-		// Get the name of the master node
-		String masterNodeName = KevoreeHelper.getMasterNodeName();
-		
-		// Get a Map with nodes name as keys and type definition as value
-		Map<String,TypeDefinition> nodesNameAndTypeDef = KevoreeHelper.getNodesNameAndTypeDefFromKevScript();
-		
-		// Get a Map with nodes name as keys and IP address as value
-		Map<String,String> nodesNameAndIp = KevoreeHelper.getNodesNameAndIpAddressFromKevScript();
+			// Get the KevScript from his file path 
+			String kevscript = KevoreeHelper.getKevscriptFromPath(kevscriptPath);
+			
+			// Create the model according to the kevscript in param
+			KevoreeHelper.createModelFromKevScript(kevscript);
+			
+			// Get the name of the master node
+			String masterNodeName = KevoreeHelper.getMasterNodeName();
+			
+			// Get a Map with nodes name as keys and type definition as value
+			Map<String,TypeDefinition> nodesNameAndTypeDef = KevoreeHelper.getNodesNameAndTypeDefFromKevScript();
+			
+			// Get a Map with nodes name as keys and IP address as value
+			Map<String,String> nodesNameAndIp = KevoreeHelper.getNodesNameAndIpAddressFromKevScript();
 	}
 }
 ```
