@@ -12,12 +12,12 @@ public class App
 		System.out.println("Running Kevoree-Scalability");
 		System.out.println("===========================");
 
-		GUI gui = new GUI();
+		new GUI();
 
 		Runtime.getRuntime().addShutdownHook(new Thread() {
 			@Override
 			public void run() {
-				DockerHelper.removeAllContainer(gui);
+				DockerHelper.removeAllContainer();
 				DockerHelper.removeNetwork();
 			}
 		});

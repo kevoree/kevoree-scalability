@@ -112,29 +112,45 @@ public class KevoreeHelper {
 	public static Map<String,String> getNodesNameAndIpAddressFromKevScript(){
 		List<ContainerNode> nodes = currentModel.getNodes();
 		Map<String,String> nodesNameAndIpAddress = new HashMap<String,String>();
-		String baseIp = "";
+		String masterNodeIp = "100.100.0.2";
 		
 		for (ContainerNode node : nodes) {
 			if(node.getName().equals(getMasterNodeName())){
-				baseIp = node.getNetworkInformation().get(0).getValues().get(0).getValue();
-				nodesNameAndIpAddress.put(node.getName(), baseIp);
-				System.out.println(baseIp);
-			}
-		}
-		for (ContainerNode node : nodes) {
-			if(!node.getName().equals(getMasterNodeName())){
-				int lastIpFragment = Integer.parseInt(baseIp.split("\\.")[3])+1;
-				baseIp = baseIp.split("\\.")[0]+"."+baseIp.split("\\.")[1]+"."+baseIp.split("\\.")[2]+"."+lastIpFragment;
+				//masterNodeIp = node.getNetworkInformation().get(0).getValues().get(0).getValue();
 				Value valueIp = factory.createValue();
 				valueIp.setName("lo");
-				valueIp.setValue(baseIp);
+				valueIp.setValue(masterNodeIp);
 				List<Value> valueListNetwork = new ArrayList<Value>();
 				valueListNetwork.add(valueIp);
 				NetworkInfo networkInfo = factory.createNetworkInfo();
 				networkInfo.setName("net1");
 				networkInfo.addAllValues(valueListNetwork);
 				node.addNetworkInformation(networkInfo);
-				nodesNameAndIpAddress.put(node.getName(), baseIp);
+				nodesNameAndIpAddress.put(node.getName(), masterNodeIp);
+			}
+		}
+		
+		String newIp = masterNodeIp;
+		
+		for (ContainerNode node : nodes) {
+			if(!node.getName().equals(getMasterNodeName())){
+				int ipFragmentFourth = Integer.parseInt(newIp.split("\\.")[3])+1;
+				int ipFragmentThird =Integer.parseInt(newIp.split("\\.")[2]);
+				if(ipFragmentFourth==255){
+					ipFragmentThird = ipFragmentThird+1;
+					ipFragmentFourth = 2;
+				}
+				newIp = masterNodeIp.split("\\.")[0]+"."+masterNodeIp.split("\\.")[1]+"."+ipFragmentThird+"."+ipFragmentFourth;
+				Value valueIp = factory.createValue();
+				valueIp.setName("lo");
+				valueIp.setValue(newIp);
+				List<Value> valueListNetwork = new ArrayList<Value>();
+				valueListNetwork.add(valueIp);
+				NetworkInfo networkInfo = factory.createNetworkInfo();
+				networkInfo.setName("net1");
+				networkInfo.addAllValues(valueListNetwork);
+				node.addNetworkInformation(networkInfo);
+				nodesNameAndIpAddress.put(node.getName(), newIp);
 			}
 		}
 		return nodesNameAndIpAddress;
@@ -159,7 +175,7 @@ public class KevoreeHelper {
 	}
 
 	/**
-	 * Update a model from KevScript.
+	 * Create a model from KevScript.
 	 * 
 	 * @param ks
 	 *     The Kevscript
