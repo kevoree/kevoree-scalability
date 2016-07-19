@@ -42,6 +42,7 @@ public class KevoreeHelper {
 	private static final KevScriptService kevScriptService = new KevScriptEngine();
 
 	public static ContainerRoot currentModel = createEmptyContainerRoot();
+	
 
 	/**
 	 * Get the name of the master node
@@ -53,10 +54,13 @@ public class KevoreeHelper {
 		String masterNodeName = "";
 
 		List<Group> groups = currentModel.getGroups();
-
+	
+		
 		for (Group group : groups) {
+			
 			List<Value> groupDictionary = group.getDictionary().getValues();
 			for (Value value : groupDictionary) {
+				
 				if(value.getName().equals("master")){
 					masterNodeName = value.getValue();
 				}
@@ -79,6 +83,7 @@ public class KevoreeHelper {
 				masterNodePort = group.findFragmentDictionaryByID(getMasterNodeName()).findValuesByID("port").getValue();
 			} catch (NullPointerException e) {
 				masterNodePort = "9000";
+				//group.findFragmentDictionaryByID(getMasterNodeName()).findValuesByID("port").setValue(masterNodePort);
 			}
 		}
 		return masterNodePort;
@@ -116,14 +121,13 @@ public class KevoreeHelper {
 		
 		for (ContainerNode node : nodes) {
 			if(node.getName().equals(getMasterNodeName())){
-				//masterNodeIp = node.getNetworkInformation().get(0).getValues().get(0).getValue();
 				Value valueIp = factory.createValue();
-				valueIp.setName("lo");
+				valueIp.setName("ip0");
 				valueIp.setValue(masterNodeIp);
 				List<Value> valueListNetwork = new ArrayList<Value>();
 				valueListNetwork.add(valueIp);
 				NetworkInfo networkInfo = factory.createNetworkInfo();
-				networkInfo.setName("net1");
+				networkInfo.setName("ip");
 				networkInfo.addAllValues(valueListNetwork);
 				node.addNetworkInformation(networkInfo);
 				nodesNameAndIpAddress.put(node.getName(), masterNodeIp);
@@ -142,12 +146,12 @@ public class KevoreeHelper {
 				}
 				newIp = masterNodeIp.split("\\.")[0]+"."+masterNodeIp.split("\\.")[1]+"."+ipFragmentThird+"."+ipFragmentFourth;
 				Value valueIp = factory.createValue();
-				valueIp.setName("lo");
+				valueIp.setName("ip0");
 				valueIp.setValue(newIp);
 				List<Value> valueListNetwork = new ArrayList<Value>();
 				valueListNetwork.add(valueIp);
 				NetworkInfo networkInfo = factory.createNetworkInfo();
-				networkInfo.setName("net1");
+				networkInfo.setName("ip");
 				networkInfo.addAllValues(valueListNetwork);
 				node.addNetworkInformation(networkInfo);
 				nodesNameAndIpAddress.put(node.getName(), newIp);
@@ -184,6 +188,7 @@ public class KevoreeHelper {
 	 */
 	public static void createModelFromKevScript(String ks) {
 		try {
+			currentModel = createEmptyContainerRoot();
 			kevScriptService.execute(ks, currentModel);	
 		} catch (Exception e) {
 			System.out.println("Invalid KevScript");

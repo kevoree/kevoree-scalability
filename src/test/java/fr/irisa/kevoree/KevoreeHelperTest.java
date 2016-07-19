@@ -7,11 +7,13 @@ import java.util.Map;
 import java.util.stream.Stream;
 
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 
 public class KevoreeHelperTest {
 
 	@Test
+	@Ignore
 	public void test1() {
 		
 		String ks = "add javaNode : JavaNode\n" + "add jsNode : JavascriptNode\n" + "add group : WSGroup\n"
@@ -26,6 +28,7 @@ public class KevoreeHelperTest {
 	}
 
 	@Test
+	@Ignore
 	public void test2() {
 		String ksPath = "/home/Savak/Dev/Models/bigModel.kevs";
 		
@@ -49,6 +52,7 @@ public class KevoreeHelperTest {
 	}
 	
 	@Test
+	@Ignore
 	public void test3(){
 		String ksPath = "/home/Savak/Dev/Models/bigModel.kevs";
 		

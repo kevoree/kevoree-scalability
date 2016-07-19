@@ -4,7 +4,7 @@
 
 	<groupId>fr.irisa.kevoree</groupId>
 	<artifactId>kevoree-scalability</artifactId>
-	<version>5.3.1</version>
+	<version>1.0.0</version>
 	<packaging>jar</packaging>
 
 	<name>kevoree-scalability</name>

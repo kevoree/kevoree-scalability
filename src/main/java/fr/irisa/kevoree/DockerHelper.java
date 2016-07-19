@@ -13,8 +13,11 @@ import com.github.dockerjava.api.DockerClient;
 import com.github.dockerjava.api.command.CreateContainerResponse;
 import com.github.dockerjava.api.exception.NotFoundException;
 import com.github.dockerjava.api.model.Bind;
+import com.github.dockerjava.api.model.ExposedPort;
 import com.github.dockerjava.api.model.Frame;
 import com.github.dockerjava.api.model.Network;
+import com.github.dockerjava.api.model.Ports;
+import com.github.dockerjava.api.model.Ports.Binding;
 import com.github.dockerjava.api.model.Volume;
 import com.github.dockerjava.core.DockerClientBuilder;
 import com.github.dockerjava.core.command.LogContainerResultCallback;
@@ -42,7 +45,7 @@ public class DockerHelper{
 	 * @param
 	 * 		Path of the KevScript within the container
 	 */
-	private static Volume volumeKsContainerPath = new Volume("/root/model.kevs");
+	private static Volume volumeKsContainerPath = new Volume("/root/model.json");
 
 
 
@@ -50,12 +53,11 @@ public class DockerHelper{
 	 * Create a network for the container communication
 	 */
 	public static void createNetwork(){
-		dockerClient.createNetworkCmd()
-		.withIpam(new Network.Ipam()
-				.withConfig(new Network.Ipam.Config()
-						.withSubnet("100.100.0.0/16")))
-		.withName("KevoreeScalabilityNetwork")
-		.exec();
+		String networkName = "KevoreeScalabilityNetwork";
+        Network.Ipam ipam = new Network.Ipam()
+        		.withConfig(new Network.Ipam.Config().withSubnet("100.100.0.0/16"));
+        
+        dockerClient.createNetworkCmd().withName(networkName).withIpam(ipam).exec();
 	}
 
 	/**
@@ -64,23 +66,47 @@ public class DockerHelper{
 	 * @param nodeName
 	 * 		The name of your node specified in the KevScript
 	 * @param ksPath
-	 * 		The KevScript path
+	 * 		The KevScript pathd
 	 * @param ip
 	 * 		The IP address of the node
 	 */
-	public static void startContainerJsNode(String nodeName, String ksPath, String ip){
-		CreateContainerResponse container = dockerClient.createContainerCmd("kevoree/js")
-				.withNetworkMode("KevoreeScalabilityNetwork")
-				.withIpv4Address(ip)
-				.withName(nodeName+"Container")
-				.withVolumes(volumeKsContainerPath)
-				.withBinds(new Bind("/kevoree/"+ksPath.split("/")[ksPath.split("/").length-1], volumeKsContainerPath))
-				.withCmd("-n", nodeName, "--kevscript="+volumeKsContainerPath)
-				.exec();
+	public static void startContainerJsNode(String nodeName, String ip){
+		if(nodeName.equals(KevoreeHelper.getMasterNodeName())){
 
-		containerList.add(container.getId());
-		dockerClient.startContainerCmd(container.getId())
-		.exec();
+			ExposedPort tcp9000 = ExposedPort.tcp(9000);
+			Ports portBindings = new Ports();
+			portBindings.bind(tcp9000, Binding.bindPort(9000));
+			
+			CreateContainerResponse container = dockerClient.createContainerCmd("kevoree/js")
+					.withNetworkMode("KevoreeScalabilityNetwork")
+					.withIpv4Address(ip)
+					.withName(nodeName+"Container")
+					.withVolumes(volumeKsContainerPath)
+					.withEnv("KEVOREE_REGISTRY_HOST=10.0.0.7", "KEVOREE_REGISTRY_PORT=32768")
+					.withBinds(new Bind("/kevoree/model.json", volumeKsContainerPath))
+					.withExposedPorts(tcp9000)
+					.withPortBindings(portBindings)
+					.withCmd("--model=" + volumeKsContainerPath.getPath(), "--nodeName="+ nodeName)
+					.exec();
+
+			containerList.add(container.getId());
+			dockerClient.startContainerCmd(container.getId())
+			.exec();
+		}else{
+			CreateContainerResponse container = dockerClient.createContainerCmd("kevoree/js")
+					.withNetworkMode("KevoreeScalabilityNetwork")
+					.withIpv4Address(ip)
+					.withName(nodeName+"Container")
+					.withVolumes(volumeKsContainerPath)
+					.withEnv("KEVOREE_REGISTRY_HOST=10.0.0.7", "KEVOREE_REGISTRY_PORT=32768")
+					.withBinds(new Bind("/kevoree/model.json", volumeKsContainerPath))
+					.withCmd("--model=" + volumeKsContainerPath.getPath(), "--nodeName="+ nodeName)
+					.exec();
+
+			containerList.add(container.getId());
+			dockerClient.startContainerCmd(container.getId())
+			.exec();
+		}
 	}
 
 	/**
@@ -93,20 +119,44 @@ public class DockerHelper{
 	 * @param ip
 	 * 		The IP address of the node
 	 */
-	public static void startContainerJavaNode(String nodeName, String ksPath, String ip){
-		volumeKsContainerPath = new Volume("/kevoree/"+ksPath.split("/")[ksPath.split("/").length-1]);
-		CreateContainerResponse container = dockerClient.createContainerCmd("kevoree/java")
-				.withNetworkMode("KevoreeScalabilityNetwork")
-				.withIpv4Address(ip)
-				.withName(nodeName+"Container")
-				.withVolumes(volumeKsContainerPath)
-				.withBinds(new Bind("/kevoree/"+ksPath.split("/")[ksPath.split("/").length-1], volumeKsContainerPath))
-				.withCmd("-Dnode.name="+nodeName, "-Dnode.bootstrap="+volumeKsContainerPath)
-				.exec();
+	public static void startContainerJavaNode(String nodeName, String ip){
+		if(nodeName.equals(KevoreeHelper.getMasterNodeName())){
+			
+			ExposedPort tcp9000 = ExposedPort.tcp(9000);
+			Ports portBindings = new Ports();
+			portBindings.bind(tcp9000, Binding.bindPort(9000));
+			
+			//volumeKsContainerPath = new Volume("/kevoree/"+ksPath.split("/")[ksPath.split("/").length-1]);
+			CreateContainerResponse container = dockerClient.createContainerCmd("kevoree/java")
+					.withNetworkMode("KevoreeScalabilityNetwork")
+					.withIpv4Address(ip)
+					.withName(nodeName+"Container")
+					.withVolumes(volumeKsContainerPath)
+					.withBinds(new Bind("/kevoree/model.json", volumeKsContainerPath))
+					.withExposedPorts(tcp9000)
+					.withPortBindings(portBindings)
+					.withCmd("-Dkevoree.registry=http://10.0.0.7:32768 -Dnode.name=" + nodeName + " -Dnode.bootstrap="+volumeKsContainerPath.getPath())
+					.exec();
 
-		containerList.add(container.getId());
-		dockerClient.startContainerCmd(container.getId())
-		.exec();
+			containerList.add(container.getId());
+			dockerClient.startContainerCmd(container.getId())
+			.exec();
+		}else{
+			//volumeKsContainerPath = new Volume("/kevoree/"+ksPath.split("/")[ksPath.split("/").length-1]);
+			CreateContainerResponse container = dockerClient.createContainerCmd("kevoree/java")
+					.withNetworkMode("KevoreeScalabilityNetwork")
+					.withIpv4Address(ip)
+					.withName(nodeName+"Container")
+					.withVolumes(volumeKsContainerPath)
+					.withBinds(new Bind("/kevoree/model.json", volumeKsContainerPath))
+					.withCmd("-Dkevoree.registry=http://10.0.0.7:32768 -Dnode.name=" + nodeName + " -Dnode.bootstrap="+volumeKsContainerPath.getPath())
+					.exec();
+
+			containerList.add(container.getId());
+			dockerClient.startContainerCmd(container.getId())
+			.exec();
+		}
+		
 	}
 
 

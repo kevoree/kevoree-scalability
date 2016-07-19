@@ -74,7 +74,7 @@ public class ClusterHelper {
 			channelSftp = (ChannelSftp)channel;
 			channelSftp.cd(sftpWorkingDir);
 			File f = new File(kevscriptPath);
-			channelSftp.put(new FileInputStream(f), f.getName());
+			channelSftp.put(new FileInputStream(f), "model.json");
 		}catch(Exception ex){
 			ex.printStackTrace();
 		}

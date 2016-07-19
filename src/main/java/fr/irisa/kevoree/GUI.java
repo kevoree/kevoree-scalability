@@ -2,10 +2,22 @@ package fr.irisa.kevoree;
 
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.stream.Stream;
 
 import javax.swing.JButton;
 import javax.swing.JFileChooser;
@@ -15,7 +27,9 @@ import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
 
+import org.kevoree.ContainerRoot;
 import org.kevoree.TypeDefinition;
+import org.kevoree.factory.DefaultKevoreeFactory;
 
 
 
@@ -29,7 +43,7 @@ import org.kevoree.TypeDefinition;
 public class GUI extends JFrame implements ActionListener{
 
 	private static final long serialVersionUID = 1L;
-	
+
 	/**
 	 * Kevscript path and script
 	 */
@@ -37,8 +51,10 @@ public class GUI extends JFrame implements ActionListener{
 	private String baseKevScript;
 	private String updatedKevScriptPath;
 	private String updatedKevScript;
-	
+
 	private int numberOfRunningContainer = 0;
+
+	File dumpFile = null;
 
 	/**
 	 * GUI components
@@ -48,9 +64,6 @@ public class GUI extends JFrame implements ActionListener{
 	private JScrollPane scrollPaneWorkflow= new JScrollPane(textAreaWorkflow);
 	private JLabel labelNumberOfRunningContainer = new JLabel("Number of running container : ");
 	private JLabel labelMasterNodeNameAndIp = new JLabel("Master node name and IP : ");
-	private JLabel labelTestResults = new JLabel("Test results:");
-	private JTextArea textAreaTestResults = new JTextArea();
-	private JScrollPane scrollPaneTestResults= new JScrollPane(textAreaTestResults);
 	private JButton buttonImportBaseKs = new JButton("Import a base KevScript model");
 	private JButton buttonImportUpdatedKs = new JButton("Import an updated KevScript model");
 	private JButton buttonRunPlatforms = new JButton("Run Docker containers according to the base KevScript");
@@ -59,7 +72,15 @@ public class GUI extends JFrame implements ActionListener{
 	private JLabel labelPathUpdatedKS = new JLabel("Updated KevScript path : ");
 	private JTextField textFieldPathBaseKS = new JTextField();
 	private JTextField textFieldPathUpdatedKS = new JTextField();
-	
+	private JTextField textFieldNumberOfNodes= new JTextField();
+	private JTextField textFieldNumberOfComponents= new JTextField();
+	private JTextField textFieldNumberOfChannels= new JTextField();
+	private JButton buttonImportRandomBaseKs = new JButton("Import a random base KevScript model according to these previous properties");
+	private JLabel labelModelGenerator = new JLabel("<html><h2>Random model generator</h2></html>");
+	private JLabel labelNumberOfNodes = new JLabel("Number of nodes : ");
+	private JLabel labelNumberOfComponents = new JLabel("Number of components : ");
+	private JLabel labelNumberOfChannels = new JLabel("Number of channels : ");
+
 
 	/**
 	 * GUI constructor
@@ -84,13 +105,20 @@ public class GUI extends JFrame implements ActionListener{
 		textFieldPathUpdatedKS.setBounds(630 + labelPathUpdatedKS.getPreferredSize().width, 180, 550 - labelPathUpdatedKS.getPreferredSize().width, textFieldPathUpdatedKS.getPreferredSize().height);
 		buttonImportUpdatedKs.setBounds(610, 220, buttonImportUpdatedKs.getPreferredSize().width, buttonImportUpdatedKs.getPreferredSize().height);
 		buttonPushAdaptations.setBounds(610, 260, buttonPushAdaptations.getPreferredSize().width, buttonPushAdaptations.getPreferredSize().height);
-		labelTestResults.setBounds(610, 320, labelTestResults.getPreferredSize().width, labelTestResults.getPreferredSize().height);
-		scrollPaneTestResults.setBounds(610, 340, 570, 400);
+		labelModelGenerator.setBounds(610, 320, labelModelGenerator.getPreferredSize().width, labelModelGenerator.getPreferredSize().height);
+		labelNumberOfNodes.setBounds(610, 370, labelNumberOfNodes.getPreferredSize().width, labelNumberOfNodes.getPreferredSize().height);
+		labelNumberOfComponents.setBounds(610, 410, labelNumberOfComponents.getPreferredSize().width, labelNumberOfComponents.getPreferredSize().height);
+		labelNumberOfChannels.setBounds(610, 450, labelNumberOfChannels.getPreferredSize().width, labelNumberOfChannels.getPreferredSize().height);
+		textFieldNumberOfNodes.setBounds(620+labelNumberOfNodes.getPreferredSize().width, 370, 50, textFieldNumberOfNodes.getPreferredSize().height);
+		textFieldNumberOfComponents.setBounds(620+labelNumberOfComponents.getPreferredSize().width, 410, 50, textFieldNumberOfComponents.getPreferredSize().height);
+		textFieldNumberOfChannels.setBounds(620+labelNumberOfChannels.getPreferredSize().width, 450, 50, textFieldNumberOfChannels.getPreferredSize().height);
+		buttonImportRandomBaseKs.setBounds(610, 490, buttonImportRandomBaseKs.getPreferredSize().width, buttonImportRandomBaseKs.getPreferredSize().height);
 
 		buttonImportBaseKs.addActionListener(this);
 		buttonRunPlatforms.addActionListener(this);
 		buttonImportUpdatedKs.addActionListener(this);
 		buttonPushAdaptations.addActionListener(this);
+		buttonImportRandomBaseKs.addActionListener(this);
 
 		buttonRunPlatforms.setEnabled(false);
 		buttonImportUpdatedKs.setEnabled(false);
@@ -103,21 +131,27 @@ public class GUI extends JFrame implements ActionListener{
 		add(labelPathBaseKS);
 		add(textFieldPathBaseKS);
 		add(buttonImportBaseKs);
+		add(buttonImportRandomBaseKs);
 		add(buttonRunPlatforms);
 		add(labelPathUpdatedKS);
 		add(textFieldPathUpdatedKS);
 		add(buttonImportUpdatedKs);
 		add(buttonPushAdaptations);
-		add(labelTestResults);
-		add(scrollPaneTestResults);
+		add(textFieldNumberOfNodes);
+		add(textFieldNumberOfComponents);
+		add(textFieldNumberOfChannels);
+		add(labelModelGenerator);
+		add(labelNumberOfNodes);
+		add(labelNumberOfComponents);
+		add(labelNumberOfChannels);
 
 		setVisible(true);
 	}
-	
+
 	public JTextArea getTextAreaWorkflow() {
 		return textAreaWorkflow;
 	}
-	
+
 	public JLabel getLabelNumberOfRunningContainer() {
 		return labelNumberOfRunningContainer;
 	}
@@ -139,14 +173,14 @@ public class GUI extends JFrame implements ActionListener{
 				textFieldPathBaseKS.setText(baseKevScriptPath);
 				baseKevScript = KevoreeHelper.getKevscriptFromPath(baseKevScriptPath);
 				KevoreeHelper.createModelFromKevScript(baseKevScript);
-				
+
 				buttonRunPlatforms.setEnabled(true);
 			}			
 		}
 
 		if(e.getSource()==buttonRunPlatforms){
-			
-			// get the name of the master node
+
+			// Get the name of the master node
 			String masterNodeName = KevoreeHelper.getMasterNodeName();
 
 			// Get a Map with nodes name as keys and type definition as value
@@ -154,43 +188,55 @@ public class GUI extends JFrame implements ActionListener{
 
 			// Get a Map with nodes name as keys and IP address as value
 			Map<String,String> nodesNameAndIp = KevoreeHelper.getNodesNameAndIpAddressFromKevScript();
-			
+
 			// Create the overlay network according to the IP of the master node
 			DockerHelper.createNetwork();
+
+			try {
+				dumpFile = new File("dump.json");
+				FileOutputStream fileOutputStream = new FileOutputStream(dumpFile);
+				new DefaultKevoreeFactory().createJSONSerializer().serializeToStream(KevoreeHelper.currentModel, fileOutputStream);
+				fileOutputStream.flush();
+				fileOutputStream.close();
+			} catch (FileNotFoundException e1) {
+				e1.printStackTrace();
+			} catch (IOException e1) {
+				e1.printStackTrace();
+			}
 			
+
 			labelMasterNodeNameAndIp.setText(labelMasterNodeNameAndIp.getText()+masterNodeName+" --> "+nodesNameAndIp.get(masterNodeName));
 			labelMasterNodeNameAndIp.setBounds(20, 680, labelMasterNodeNameAndIp.getPreferredSize().width, labelMasterNodeNameAndIp.getPreferredSize().height);
-			
+
 			// Implementation of an ExecutorService
 			ExecutorService executorService = Executors.newFixedThreadPool(nodesNameAndIp.keySet().size());
 
 			Map<String, List<String>> clusterLogin = ClusterHelper.clusterLogin;
 			for (String login : clusterLogin.keySet()) {
-				ClusterHelper.copyKevsciptToAllClusterNode(login, clusterLogin.get(login).get(0), clusterLogin.get(login).get(1), baseKevScriptPath);
+				ClusterHelper.copyKevsciptToAllClusterNode(login, clusterLogin.get(login).get(0), clusterLogin.get(login).get(1), dumpFile.getPath());
 			}
-			
-			
-			for (String nodeName : nodesNameAndTypeDef.keySet()) {
 
+
+			for (String nodeName : nodesNameAndTypeDef.keySet()) {
 				if(nodesNameAndTypeDef.get(nodeName).getName().equals("JavascriptNode")){
 					Runnable taskStartContainerJsNode = () -> {
-						DockerHelper.startContainerJsNode(nodeName, baseKevScriptPath, nodesNameAndIp.get(nodeName));
-						textAreaWorkflow.append("Starting "+nodeName+"Container --> IP : "+nodesNameAndIp.get(nodeName)+"\n");
+						DockerHelper.startContainerJsNode(nodeName, nodesNameAndIp.get(nodeName));
+						textAreaWorkflow.append("Starting "+nodesNameAndTypeDef.get(nodeName).getName()+" "+nodeName+"Container --> IP : "+nodesNameAndIp.get(nodeName)+"\n");
 						numberOfRunningContainer=numberOfRunningContainer+1;
 						labelNumberOfRunningContainer.setText("Number of running container : "+numberOfRunningContainer);
 						labelNumberOfRunningContainer.setBounds(20, 660, labelNumberOfRunningContainer.getPreferredSize().width, labelNumberOfRunningContainer.getPreferredSize().height);
-				
+
 					};
 					executorService.execute(taskStartContainerJsNode);
 				}
 				if(nodesNameAndTypeDef.get(nodeName).getName().equals("JavaNode")){
 					Runnable taskStartContainerJavaNode = () -> {
-						DockerHelper.startContainerJavaNode(nodeName, baseKevScriptPath, nodesNameAndIp.get(nodeName));
-						textAreaWorkflow.append("Starting "+nodeName+"Container --> IP : "+nodesNameAndIp.get(nodeName)+"\n");
+						DockerHelper.startContainerJavaNode(nodeName, nodesNameAndIp.get(nodeName));
+						textAreaWorkflow.append("Starting "+nodesNameAndTypeDef.get(nodeName).getName()+" "+nodeName+"Container --> IP : "+nodesNameAndIp.get(nodeName)+"\n");
 						numberOfRunningContainer=numberOfRunningContainer+1;
 						labelNumberOfRunningContainer.setText("Number of running container : "+numberOfRunningContainer);
 						labelNumberOfRunningContainer.setBounds(20, 660, labelNumberOfRunningContainer.getPreferredSize().width, labelNumberOfRunningContainer.getPreferredSize().height);
-						
+
 					};
 					executorService.execute(taskStartContainerJavaNode);
 				}
@@ -220,6 +266,31 @@ public class GUI extends JFrame implements ActionListener{
 				// TODO Auto-generated catch block
 				e1.printStackTrace();
 			}
+		}
+
+		if(e.getSource()==buttonImportRandomBaseKs){
+			try {
+				String[] temp = new String[0];
+
+				int numberOfNodes = Integer.parseInt(textFieldNumberOfNodes.getText());
+				int numberOfComponents = Integer.parseInt(textFieldNumberOfNodes.getText());
+				int numberOfChannels = Integer.parseInt(textFieldNumberOfNodes.getText());
+
+				ModelGenerator.generateModel(temp, numberOfNodes, numberOfComponents, numberOfChannels);
+
+				File fileKevscript = new File("model0.kevs");
+
+				baseKevScriptPath=fileKevscript.getPath();
+				textFieldPathBaseKS.setText(baseKevScriptPath);
+				baseKevScript = KevoreeHelper.getKevscriptFromPath(baseKevScriptPath);
+				KevoreeHelper.createModelFromKevScript(baseKevScript);
+
+				buttonRunPlatforms.setEnabled(true);
+			} catch (IOException e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			}
+			buttonRunPlatforms.setEnabled(true);
 		}
 	}
 }
