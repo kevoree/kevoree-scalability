@@ -43,6 +43,8 @@ public class KevoreeHelper {
 
 	public static ContainerRoot currentModel = createEmptyContainerRoot();
 	
+	public static int nodesNumber = 0;
+	
 
 	/**
 	 * Get the name of the master node
@@ -82,7 +84,7 @@ public class KevoreeHelper {
 			try {
 				masterNodePort = group.findFragmentDictionaryByID(getMasterNodeName()).findValuesByID("port").getValue();
 			} catch (NullPointerException e) {
-				masterNodePort = "9000";
+				masterNodePort = Config.MASTER_NODE_PORT;
 				//group.findFragmentDictionaryByID(getMasterNodeName()).findValuesByID("port").setValue(masterNodePort);
 			}
 		}
@@ -117,7 +119,7 @@ public class KevoreeHelper {
 	public static Map<String,String> getNodesNameAndIpAddressFromKevScript(){
 		List<ContainerNode> nodes = currentModel.getNodes();
 		Map<String,String> nodesNameAndIpAddress = new HashMap<String,String>();
-		String masterNodeIp = "100.100.0.2";
+		String masterNodeIp = Config.MASTER_NODE_IP;
 		
 		for (ContainerNode node : nodes) {
 			if(node.getName().equals(getMasterNodeName())){
@@ -190,6 +192,7 @@ public class KevoreeHelper {
 		try {
 			currentModel = createEmptyContainerRoot();
 			kevScriptService.execute(ks, currentModel);	
+			nodesNumber = currentModel.getNodes().size();
 		} catch (Exception e) {
 			System.out.println("Invalid KevScript");
 		}

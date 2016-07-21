@@ -7,27 +7,24 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
 
 import com.github.dockerjava.api.DockerClient;
 import com.github.dockerjava.api.command.CreateContainerResponse;
 import com.github.dockerjava.api.exception.NotFoundException;
 import com.github.dockerjava.api.model.Bind;
 import com.github.dockerjava.api.model.ExposedPort;
-import com.github.dockerjava.api.model.Frame;
 import com.github.dockerjava.api.model.Network;
 import com.github.dockerjava.api.model.Ports;
 import com.github.dockerjava.api.model.Ports.Binding;
 import com.github.dockerjava.api.model.Volume;
 import com.github.dockerjava.core.DockerClientBuilder;
-import com.github.dockerjava.core.command.LogContainerResultCallback;
 
 public class DockerHelper{
 
 	/**
 	 * Initialize docker client
 	 */
-	private static DockerClient dockerClient = DockerClientBuilder.getInstance("tcp://10.0.0.1:4000").build();
+	private static final DockerClient dockerClient = DockerClientBuilder.getInstance(Config.DOCKER_DAEMON_HOST).build();
 
 	/**
 	 * String list of container name used for remove all the container started with startContainerJavaNode() and startContainerJsNode()
@@ -36,8 +33,7 @@ public class DockerHelper{
 	 * 		startContainerJavaNode()
 	 * 		startContainerJsNode()
 	 */
-	private static List<String> containerList = new ArrayList<String>();
-	private static int containerListSize = 0;
+	private static final List<String> containerList = new ArrayList<String>();
 
 	/**
 	 * Volume to bind within the container
@@ -45,7 +41,7 @@ public class DockerHelper{
 	 * @param
 	 * 		Path of the KevScript within the container
 	 */
-	private static Volume volumeKsContainerPath = new Volume("/root/model.json");
+	private static final Volume volumeKsContainerPath = new Volume("/root/model.json");
 
 
 
@@ -53,11 +49,10 @@ public class DockerHelper{
 	 * Create a network for the container communication
 	 */
 	public static void createNetwork(){
-		String networkName = "KevoreeScalabilityNetwork";
         Network.Ipam ipam = new Network.Ipam()
-        		.withConfig(new Network.Ipam.Config().withSubnet("100.100.0.0/16"));
+        		.withConfig(new Network.Ipam.Config().withSubnet(Config.DOCKER_NETWORK_SUBNET));
         
-        dockerClient.createNetworkCmd().withName(networkName).withIpam(ipam).exec();
+        dockerClient.createNetworkCmd().withName(Config.DOCKER_NETWORK_NAME).withIpam(ipam).exec();
 	}
 
 	/**
@@ -78,11 +73,11 @@ public class DockerHelper{
 			portBindings.bind(tcp9000, Binding.bindPort(9000));
 			
 			CreateContainerResponse container = dockerClient.createContainerCmd("kevoree/js")
-					.withNetworkMode("KevoreeScalabilityNetwork")
+					.withNetworkMode(Config.DOCKER_NETWORK_NAME)
 					.withIpv4Address(ip)
 					.withName(nodeName+"Container")
 					.withVolumes(volumeKsContainerPath)
-					.withEnv("KEVOREE_REGISTRY_HOST=10.0.0.7", "KEVOREE_REGISTRY_PORT=32768")
+					.withEnv("KEVOREE_REGISTRY_HOST="+Config.KEVOREE_REGISTRY_HOST, "KEVOREE_REGISTRY_PORT="+Config.KEVOREE_REGISTRY_PORT)
 					.withBinds(new Bind("/kevoree/model.json", volumeKsContainerPath))
 					.withExposedPorts(tcp9000)
 					.withPortBindings(portBindings)
@@ -94,11 +89,11 @@ public class DockerHelper{
 			.exec();
 		}else{
 			CreateContainerResponse container = dockerClient.createContainerCmd("kevoree/js")
-					.withNetworkMode("KevoreeScalabilityNetwork")
+					.withNetworkMode(Config.DOCKER_NETWORK_NAME)
 					.withIpv4Address(ip)
 					.withName(nodeName+"Container")
 					.withVolumes(volumeKsContainerPath)
-					.withEnv("KEVOREE_REGISTRY_HOST=10.0.0.7", "KEVOREE_REGISTRY_PORT=32768")
+					.withEnv("KEVOREE_REGISTRY_HOST="+Config.KEVOREE_REGISTRY_HOST, "KEVOREE_REGISTRY_PORT="+Config.KEVOREE_REGISTRY_PORT)
 					.withBinds(new Bind("/kevoree/model.json", volumeKsContainerPath))
 					.withCmd("--model=" + volumeKsContainerPath.getPath(), "--nodeName="+ nodeName)
 					.exec();
@@ -128,14 +123,14 @@ public class DockerHelper{
 			
 			//volumeKsContainerPath = new Volume("/kevoree/"+ksPath.split("/")[ksPath.split("/").length-1]);
 			CreateContainerResponse container = dockerClient.createContainerCmd("kevoree/java")
-					.withNetworkMode("KevoreeScalabilityNetwork")
+					.withNetworkMode(Config.DOCKER_NETWORK_NAME)
 					.withIpv4Address(ip)
 					.withName(nodeName+"Container")
 					.withVolumes(volumeKsContainerPath)
 					.withBinds(new Bind("/kevoree/model.json", volumeKsContainerPath))
 					.withExposedPorts(tcp9000)
 					.withPortBindings(portBindings)
-					.withCmd("-Dkevoree.registry=http://10.0.0.7:32768 -Dnode.name=" + nodeName + " -Dnode.bootstrap="+volumeKsContainerPath.getPath())
+					.withCmd("-Dkevoree.registry=http://"+Config.KEVOREE_REGISTRY_HOST+":"+Config.KEVOREE_REGISTRY_PORT+" -Dnode.name=" + nodeName + " -Dnode.bootstrap="+volumeKsContainerPath.getPath())
 					.exec();
 
 			containerList.add(container.getId());
@@ -144,12 +139,12 @@ public class DockerHelper{
 		}else{
 			//volumeKsContainerPath = new Volume("/kevoree/"+ksPath.split("/")[ksPath.split("/").length-1]);
 			CreateContainerResponse container = dockerClient.createContainerCmd("kevoree/java")
-					.withNetworkMode("KevoreeScalabilityNetwork")
+					.withNetworkMode(Config.DOCKER_NETWORK_NAME)
 					.withIpv4Address(ip)
 					.withName(nodeName+"Container")
 					.withVolumes(volumeKsContainerPath)
 					.withBinds(new Bind("/kevoree/model.json", volumeKsContainerPath))
-					.withCmd("-Dkevoree.registry=http://10.0.0.7:32768 -Dnode.name=" + nodeName + " -Dnode.bootstrap="+volumeKsContainerPath.getPath())
+					.withCmd("-Dkevoree.registry=http://"+Config.KEVOREE_REGISTRY_HOST+":"+Config.KEVOREE_REGISTRY_PORT+" -Dnode.name=" + nodeName + " -Dnode.bootstrap="+volumeKsContainerPath.getPath())
 					.exec();
 
 			containerList.add(container.getId());
@@ -166,16 +161,13 @@ public class DockerHelper{
 	 */
 	public static void removeAllContainer(){
 		try {
-			containerListSize=containerList.size();
-			ExecutorService executor = Executors.newFixedThreadPool(containerListSize);
+			ExecutorService executor = Executors.newFixedThreadPool(KevoreeHelper.nodesNumber);
 			Collection<Callable<Void>> taskslist = new ArrayList<Callable<Void>>();
 			for (String containerId : containerList) {
 				Callable<Void> taskRemoveContainer = () -> {
-					containerListSize = containerListSize-1;					
 					return dockerClient.removeContainerCmd(containerId)
 							.withForce(true)
 							.exec();
-
 				};
 				taskslist.add(taskRemoveContainer);
 			}
@@ -202,70 +194,15 @@ public class DockerHelper{
 	}
 
 	/**
-	 * Remove the network created by createNetwork(String ip)
+	 * Remove the network created by createNetwork()
 	 */
 	public static void removeNetwork(){
 		try {
-			dockerClient.removeNetworkCmd("KevoreeScalabilityNetwork")
+			dockerClient.removeNetworkCmd(Config.DOCKER_NETWORK_NAME)
 			.exec();
 		} catch (NotFoundException e) {
 			System.out.println("Neither network to remove");
 		}
 
-	}
-
-	/**
-	 * Get the logs of a container
-	 * 
-	 * @param containerId
-	 * @return 
-	 * 		The logs of the container specified in the parameter
-	 * @throws Exception
-	 * 
-	 * FIX ME : return logs while container is running
-	 */
-	public static String getLogs(String containerId) throws Exception {
-		LogContainerTestCallback  loggingCallback = new LogContainerTestCallback(true); // borrowed from AbstractDockerClientTest
-		dockerClient.logContainerCmd(containerId)
-		.withStdErr(true)
-		.withStdOut(true)
-		.withFollowStream(true)
-		.withTailAll()
-		.exec(loggingCallback);
-
-		loggingCallback.awaitCompletion(10, TimeUnit.SECONDS);
-		return loggingCallback.toString();
-	}
-
-	public static class LogContainerTestCallback extends LogContainerResultCallback {
-		protected final StringBuffer log = new StringBuffer();
-
-		List<Frame> collectedFrames = new ArrayList<Frame>();
-
-		boolean collectFrames = false;
-
-		public LogContainerTestCallback() {
-			this(false);
-		}
-
-		public LogContainerTestCallback(boolean collectFrames) {
-			this.collectFrames = collectFrames;
-		}
-
-		@Override
-		public void onNext(Frame frame) {
-			if(collectFrames) collectedFrames.add(frame);
-			log.append(new String(frame.getPayload()));
-		}
-
-		@Override
-		public String toString() {
-			return log.toString();
-		}
-
-
-		public List<Frame> getCollectedFrames() {
-			return collectedFrames;
-		}
 	}
 }

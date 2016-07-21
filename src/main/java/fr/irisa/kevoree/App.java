@@ -1,9 +1,7 @@
 package fr.irisa.kevoree;
 
-import java.util.ArrayList;
-
 /**
- *
+ *	Main class
  */
 public class App
 {
@@ -14,7 +12,7 @@ public class App
 		System.out.println("===========================");
 		
 		
-		System.setProperty("kevoree.registry", "http://" + Config.REGISTRY_HOST + ":" + Config.REGISTRY_PORT);
+		System.setProperty("kevoree.registry", "http://" + Config.KEVOREE_REGISTRY_HOST + ":" + Config.KEVOREE_REGISTRY_PORT);
 
 		new GUI();
 		

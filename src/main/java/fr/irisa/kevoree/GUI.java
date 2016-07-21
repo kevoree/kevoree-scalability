@@ -3,21 +3,13 @@ package fr.irisa.kevoree;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
-import java.io.FileWriter;
 import java.io.IOException;
-import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.stream.Stream;
 
 import javax.swing.JButton;
 import javax.swing.JFileChooser;
@@ -27,7 +19,6 @@ import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
 
-import org.kevoree.ContainerRoot;
 import org.kevoree.TypeDefinition;
 import org.kevoree.factory.DefaultKevoreeFactory;
 
@@ -43,7 +34,6 @@ import org.kevoree.factory.DefaultKevoreeFactory;
 public class GUI extends JFrame implements ActionListener{
 
 	private static final long serialVersionUID = 1L;
-
 	/**
 	 * Kevscript path and script
 	 */
@@ -52,36 +42,35 @@ public class GUI extends JFrame implements ActionListener{
 	private String updatedKevScriptPath;
 	private String updatedKevScript;
 
+	private File jsonModel = null;
+	
 	private int numberOfRunningContainer = 0;
-
-	File dumpFile = null;
 
 	/**
 	 * GUI components
 	 */
-	private JLabel labelWorkflow = new JLabel("Workflow : ");
-	private JTextArea textAreaWorkflow = new JTextArea();
-	private JScrollPane scrollPaneWorkflow= new JScrollPane(textAreaWorkflow);
-	private JLabel labelNumberOfRunningContainer = new JLabel("Number of running container : ");
-	private JLabel labelMasterNodeNameAndIp = new JLabel("Master node name and IP : ");
-	private JButton buttonImportBaseKs = new JButton("Import a base KevScript model");
-	private JButton buttonImportUpdatedKs = new JButton("Import an updated KevScript model");
-	private JButton buttonRunPlatforms = new JButton("Run Docker containers according to the base KevScript");
-	private JButton buttonPushAdaptations = new JButton("Push updated KevScript on running containers");
-	private JLabel labelPathBaseKS = new JLabel("Base KevScript path : ");
-	private JLabel labelPathUpdatedKS = new JLabel("Updated KevScript path : ");
-	private JTextField textFieldPathBaseKS = new JTextField();
-	private JTextField textFieldPathUpdatedKS = new JTextField();
-	private JTextField textFieldNumberOfNodes= new JTextField();
-	private JTextField textFieldNumberOfComponents= new JTextField();
-	private JTextField textFieldNumberOfChannels= new JTextField();
-	private JButton buttonImportRandomBaseKs = new JButton("Import a random base KevScript model according to these previous properties");
-	private JLabel labelModelGenerator = new JLabel("<html><h2>Random model generator</h2></html>");
-	private JLabel labelNumberOfNodes = new JLabel("Number of nodes : ");
-	private JLabel labelNumberOfComponents = new JLabel("Number of components : ");
-	private JLabel labelNumberOfChannels = new JLabel("Number of channels : ");
-
-
+	JLabel labelWorkflow = new JLabel("Workflow : ");
+	JTextArea textAreaWorkflow = new JTextArea();
+	JScrollPane scrollPaneWorkflow= new JScrollPane(textAreaWorkflow);
+	JLabel labelNumberOfRunningContainer = new JLabel("Number of running container : ");
+	JLabel labelMasterNodeNameAndIp = new JLabel("Master node name and IP : ");
+	JButton buttonImportBaseKs = new JButton("Import a base KevScript model");
+	JButton buttonImportUpdatedKs = new JButton("Import an updated KevScript model");
+	JButton buttonRunPlatforms = new JButton("Run Docker containers according to the base KevScript");
+	JButton buttonPushAdaptations = new JButton("Push updated KevScript on running containers");
+	JLabel labelPathBaseKS = new JLabel("Base KevScript path : ");
+	JLabel labelPathUpdatedKS = new JLabel("Updated KevScript path : ");
+	JTextField textFieldPathBaseKS = new JTextField();
+	JTextField textFieldPathUpdatedKS = new JTextField();
+	JTextField textFieldNumberOfNodes= new JTextField();
+	JTextField textFieldNumberOfComponents= new JTextField();
+	JTextField textFieldNumberOfChannels= new JTextField();
+	JButton buttonImportRandomBaseKs = new JButton("Import a random KevScript model according to these previous properties");
+	JLabel labelModelGenerator = new JLabel("<html><h2>Random model generator</h2></html>");
+	JLabel labelNumberOfNodes = new JLabel("Number of nodes : ");
+	JLabel labelNumberOfComponents = new JLabel("Number of components : ");
+	JLabel labelNumberOfChannels = new JLabel("Number of channels : ");
+	
 	/**
 	 * GUI constructor
 	 */
@@ -148,14 +137,6 @@ public class GUI extends JFrame implements ActionListener{
 		setVisible(true);
 	}
 
-	public JTextArea getTextAreaWorkflow() {
-		return textAreaWorkflow;
-	}
-
-	public JLabel getLabelNumberOfRunningContainer() {
-		return labelNumberOfRunningContainer;
-	}
-
 	/**
 	 * Actions performed on buttons
 	 * 
@@ -165,19 +146,26 @@ public class GUI extends JFrame implements ActionListener{
 	@Override
 	public void actionPerformed(ActionEvent e) {
 
+		// If the source of the click is "Import a base KevScript model"
 		if(e.getSource()==buttonImportBaseKs){
-			//Delete this path or put your default target for the JFileChooser
-			JFileChooser fileChooserBaseKs = new JFileChooser("/home/Savak/Dev/Models/");
+			
+			JFileChooser fileChooserBaseKs = new JFileChooser();
+			
 			if(fileChooserBaseKs.showOpenDialog(this)==JFileChooser.APPROVE_OPTION){
+				// Save the path of the selected file
 				baseKevScriptPath=fileChooserBaseKs.getSelectedFile().getPath();
+				// Display this path on a textfield  
 				textFieldPathBaseKS.setText(baseKevScriptPath);
+				// Save the file content on a String
 				baseKevScript = KevoreeHelper.getKevscriptFromPath(baseKevScriptPath);
+				// Create the Kevoree model according to the Kevscript
 				KevoreeHelper.createModelFromKevScript(baseKevScript);
-
+				
 				buttonRunPlatforms.setEnabled(true);
 			}			
 		}
 
+		// If the source of the click is "Run Docker containers according to the base KevScript"
 		if(e.getSource()==buttonRunPlatforms){
 
 			// Get the name of the master node
@@ -193,8 +181,9 @@ public class GUI extends JFrame implements ActionListener{
 			DockerHelper.createNetwork();
 
 			try {
-				dumpFile = new File("dump.json");
-				FileOutputStream fileOutputStream = new FileOutputStream(dumpFile);
+				// Create the JSON file to send in Docker container
+				jsonModel = new File("model.json");
+				FileOutputStream fileOutputStream = new FileOutputStream(jsonModel);
 				new DefaultKevoreeFactory().createJSONSerializer().serializeToStream(KevoreeHelper.currentModel, fileOutputStream);
 				fileOutputStream.flush();
 				fileOutputStream.close();
@@ -204,19 +193,22 @@ public class GUI extends JFrame implements ActionListener{
 				e1.printStackTrace();
 			}
 			
-
+			// Display the master node name
 			labelMasterNodeNameAndIp.setText(labelMasterNodeNameAndIp.getText()+masterNodeName+" --> "+nodesNameAndIp.get(masterNodeName));
 			labelMasterNodeNameAndIp.setBounds(20, 680, labelMasterNodeNameAndIp.getPreferredSize().width, labelMasterNodeNameAndIp.getPreferredSize().height);
 
-			// Implementation of an ExecutorService
-			ExecutorService executorService = Executors.newFixedThreadPool(nodesNameAndIp.keySet().size());
+			// Implementation of an ExecutorService (1 thread per node)
+			ExecutorService executorService = Executors.newFixedThreadPool(KevoreeHelper.nodesNumber);
 
-			Map<String, List<String>> clusterLogin = ClusterHelper.clusterLogin;
+			// Copy the JSON model on all the cluster machine 
+			Map<String, List<String>> clusterLogin = ClusterHelper.clusterLogins;
 			for (String login : clusterLogin.keySet()) {
-				ClusterHelper.copyKevsciptToAllClusterNode(login, clusterLogin.get(login).get(0), clusterLogin.get(login).get(1), dumpFile.getPath());
+				ClusterHelper.copyJsonModelToAllClusterNode(login, clusterLogin.get(login).get(0), clusterLogin.get(login).get(1), jsonModel.getPath());
 			}
 
-
+			
+			
+			// For all nodes, start a Docker container and run his Kevoree platform
 			for (String nodeName : nodesNameAndTypeDef.keySet()) {
 				if(nodesNameAndTypeDef.get(nodeName).getName().equals("JavascriptNode")){
 					Runnable taskStartContainerJsNode = () -> {
@@ -258,6 +250,7 @@ public class GUI extends JFrame implements ActionListener{
 			buttonPushAdaptations.setEnabled(true);
 		}
 
+		// TODO
 		if(e.getSource()==buttonPushAdaptations){
 
 			try {
@@ -268,18 +261,22 @@ public class GUI extends JFrame implements ActionListener{
 			}
 		}
 
+		// If the source of the click is "Import a random KevScript model according to these previous properties"
 		if(e.getSource()==buttonImportRandomBaseKs){
 			try {
 				String[] temp = new String[0];
 
+				// Properties of the future model
 				int numberOfNodes = Integer.parseInt(textFieldNumberOfNodes.getText());
 				int numberOfComponents = Integer.parseInt(textFieldNumberOfNodes.getText());
 				int numberOfChannels = Integer.parseInt(textFieldNumberOfNodes.getText());
 
+				// Generate the Kevscript model0.kevs at the root of the project
 				ModelGenerator.generateModel(temp, numberOfNodes, numberOfComponents, numberOfChannels);
 
 				File fileKevscript = new File("model0.kevs");
 
+				// Save and display the path of the base Kevscript and create his model
 				baseKevScriptPath=fileKevscript.getPath();
 				textFieldPathBaseKS.setText(baseKevScriptPath);
 				baseKevScript = KevoreeHelper.getKevscriptFromPath(baseKevScriptPath);
@@ -290,7 +287,6 @@ public class GUI extends JFrame implements ActionListener{
 				// TODO Auto-generated catch block
 				e1.printStackTrace();
 			}
-			buttonRunPlatforms.setEnabled(true);
 		}
 	}
 }

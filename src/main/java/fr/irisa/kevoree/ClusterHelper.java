@@ -19,38 +19,50 @@ public class ClusterHelper {
 	 * This Map represent the necessary informations of the machine of the cluster
 	 * Pattern : clusterLogin Item = [ IP , [ UserName , UserPassword ] ]
 	 */
-	public static final Map<String, List<String>> clusterLogin;
+	public static final Map<String, List<String>> clusterLogins;
 	static
 	{
-		clusterLogin = new HashMap<String, List<String>>();
+		clusterLogins = new HashMap<String, List<String>>();
 
-		clusterLogin.put("10.0.0.1", new ArrayList<String>() {{
+		clusterLogins.put("10.0.0.1", new ArrayList<String>() {{
 			add("oem");
 			add("ubuntu");
 		}});
-		clusterLogin.put("10.0.0.3", new ArrayList<String>() {{
+		clusterLogins.put("10.0.0.3", new ArrayList<String>() {{
 			add("ubuntu");
 			add("ubuntu");
 		}});
-		clusterLogin.put("10.0.0.4", new ArrayList<String>() {{
+		clusterLogins.put("10.0.0.4", new ArrayList<String>() {{
 			add("oem");
 			add("ubuntu");
 		}});
-		clusterLogin.put("10.0.0.5", new ArrayList<String>() {{
+		clusterLogins.put("10.0.0.5", new ArrayList<String>() {{
 			add("ubuntu");
 			add("ubuntu");
 		}});
-		clusterLogin.put("10.0.0.6", new ArrayList<String>() {{
+		clusterLogins.put("10.0.0.6", new ArrayList<String>() {{
 			add("ubuntu");
 			add("ubuntu");
 		}});
-		clusterLogin.put("10.0.0.7", new ArrayList<String>() {{
+		clusterLogins.put("10.0.0.7", new ArrayList<String>() {{
 			add("ubuntu");
 			add("ubuntu");
 		}});
 	}
 	
-	public static void copyKevsciptToAllClusterNode(String host, String user, String password, String kevscriptPath){
+	/**
+	 * Copy the JSON model on all cluster machine
+	 * 
+	 * @param host
+	 * 		The host of the machine
+	 * @param user
+	 * 		The machine user
+	 * @param password
+	 * 		His password
+	 * @param jsonModel
+	 * 		The path of the model to copy
+	 */
+	public static void copyJsonModelToAllClusterNode(String host, String user, String password, String jsonModel){
 		String sftpHost = host;
 		//int SFTPPORT = 4000;
 		String sftpUser = user;
@@ -73,7 +85,7 @@ public class ClusterHelper {
 			channel.connect();
 			channelSftp = (ChannelSftp)channel;
 			channelSftp.cd(sftpWorkingDir);
-			File f = new File(kevscriptPath);
+			File f = new File(jsonModel);
 			channelSftp.put(new FileInputStream(f), "model.json");
 		}catch(Exception ex){
 			ex.printStackTrace();
