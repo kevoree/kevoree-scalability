@@ -195,6 +195,7 @@ public class KevoreeHelper {
 			nodesNumber = currentModel.getNodes().size();
 		} catch (Exception e) {
 			System.out.println("Invalid KevScript");
+			System.out.println(e.getMessage());
 		}
 	}
 

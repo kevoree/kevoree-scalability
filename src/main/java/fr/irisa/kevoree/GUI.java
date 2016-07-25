@@ -12,6 +12,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import javax.swing.JButton;
+import javax.swing.JComboBox;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
@@ -70,6 +71,11 @@ public class GUI extends JFrame implements ActionListener{
 	JLabel labelNumberOfNodes = new JLabel("Number of nodes : ");
 	JLabel labelNumberOfComponents = new JLabel("Number of components : ");
 	JLabel labelNumberOfChannels = new JLabel("Number of channels : ");
+	JLabel labelLogs = new JLabel("Logs : ");
+	JTextArea textAreaLogs = new JTextArea();
+	JScrollPane scrollPaneLogs= new JScrollPane(textAreaLogs);
+	JButton buttonGetLogs = new JButton("Get logs of the following container :");
+	JComboBox<String> comboBoxRunningContainer = new JComboBox<String>();
 	
 	/**
 	 * GUI constructor
@@ -83,9 +89,13 @@ public class GUI extends JFrame implements ActionListener{
 		setLayout(null);
 
 		labelWorkflow.setBounds(20, 20, labelWorkflow.getPreferredSize().width, labelWorkflow.getPreferredSize().height);
-		scrollPaneWorkflow.setBounds(20, 40, 560, 600);
-		labelNumberOfRunningContainer.setBounds(20, 660, labelNumberOfRunningContainer.getPreferredSize().width, labelNumberOfRunningContainer.getPreferredSize().height);
-		labelMasterNodeNameAndIp.setBounds(20, 680, labelMasterNodeNameAndIp.getPreferredSize().width, labelMasterNodeNameAndIp.getPreferredSize().height);		
+		scrollPaneWorkflow.setBounds(20, 40, 560, 280);
+		labelLogs.setBounds(20, 340, labelLogs.getPreferredSize().width, labelLogs.getPreferredSize().height);
+		scrollPaneLogs.setBounds(20, 360, 560, 280);
+		buttonGetLogs.setBounds(20, 660, buttonGetLogs.getPreferredSize().width, buttonGetLogs.getPreferredSize().height);
+		comboBoxRunningContainer.setBounds(40+buttonGetLogs.getPreferredSize().width, 660, 200, comboBoxRunningContainer.getPreferredSize().height);
+		labelNumberOfRunningContainer.setBounds(20, 700, labelNumberOfRunningContainer.getPreferredSize().width, labelNumberOfRunningContainer.getPreferredSize().height);
+		labelMasterNodeNameAndIp.setBounds(20, 720, labelMasterNodeNameAndIp.getPreferredSize().width, labelMasterNodeNameAndIp.getPreferredSize().height);		
 		labelPathBaseKS.setBounds(610, 40, labelPathBaseKS.getPreferredSize().width, labelPathBaseKS.getPreferredSize().height);
 		textFieldPathBaseKS.setBounds(630 + labelPathBaseKS.getPreferredSize().width, 40, 550 - labelPathBaseKS.getPreferredSize().width, textFieldPathBaseKS.getPreferredSize().height);
 		buttonImportBaseKs.setBounds(610, 80, buttonImportBaseKs.getPreferredSize().width, buttonImportBaseKs.getPreferredSize().height);
@@ -108,13 +118,19 @@ public class GUI extends JFrame implements ActionListener{
 		buttonImportUpdatedKs.addActionListener(this);
 		buttonPushAdaptations.addActionListener(this);
 		buttonImportRandomBaseKs.addActionListener(this);
+		buttonGetLogs.addActionListener(this);
 
 		buttonRunPlatforms.setEnabled(false);
 		buttonImportUpdatedKs.setEnabled(false);
 		buttonPushAdaptations.setEnabled(false);
+		buttonGetLogs.setEnabled(false);
 
 		add(labelWorkflow);
 		add(scrollPaneWorkflow);
+		add(labelLogs);
+		add(scrollPaneLogs);
+		add(comboBoxRunningContainer);
+		add(buttonGetLogs);
 		add(labelNumberOfRunningContainer);
 		add(labelMasterNodeNameAndIp);
 		add(labelPathBaseKS);
@@ -195,7 +211,7 @@ public class GUI extends JFrame implements ActionListener{
 			
 			// Display the master node name
 			labelMasterNodeNameAndIp.setText(labelMasterNodeNameAndIp.getText()+masterNodeName+" --> "+nodesNameAndIp.get(masterNodeName));
-			labelMasterNodeNameAndIp.setBounds(20, 680, labelMasterNodeNameAndIp.getPreferredSize().width, labelMasterNodeNameAndIp.getPreferredSize().height);
+			labelMasterNodeNameAndIp.setBounds(20, 700, labelMasterNodeNameAndIp.getPreferredSize().width, labelMasterNodeNameAndIp.getPreferredSize().height);
 
 			// Implementation of an ExecutorService (1 thread per node)
 			ExecutorService executorService = Executors.newFixedThreadPool(KevoreeHelper.nodesNumber);
@@ -216,7 +232,8 @@ public class GUI extends JFrame implements ActionListener{
 						textAreaWorkflow.append("Starting "+nodesNameAndTypeDef.get(nodeName).getName()+" "+nodeName+"Container --> IP : "+nodesNameAndIp.get(nodeName)+"\n");
 						numberOfRunningContainer=numberOfRunningContainer+1;
 						labelNumberOfRunningContainer.setText("Number of running container : "+numberOfRunningContainer);
-						labelNumberOfRunningContainer.setBounds(20, 660, labelNumberOfRunningContainer.getPreferredSize().width, labelNumberOfRunningContainer.getPreferredSize().height);
+						labelNumberOfRunningContainer.setBounds(20, 720, labelNumberOfRunningContainer.getPreferredSize().width, labelNumberOfRunningContainer.getPreferredSize().height);
+						comboBoxRunningContainer.addItem(nodeName+"Container");
 
 					};
 					executorService.execute(taskStartContainerJsNode);
@@ -227,14 +244,15 @@ public class GUI extends JFrame implements ActionListener{
 						textAreaWorkflow.append("Starting "+nodesNameAndTypeDef.get(nodeName).getName()+" "+nodeName+"Container --> IP : "+nodesNameAndIp.get(nodeName)+"\n");
 						numberOfRunningContainer=numberOfRunningContainer+1;
 						labelNumberOfRunningContainer.setText("Number of running container : "+numberOfRunningContainer);
-						labelNumberOfRunningContainer.setBounds(20, 660, labelNumberOfRunningContainer.getPreferredSize().width, labelNumberOfRunningContainer.getPreferredSize().height);
-
+						labelNumberOfRunningContainer.setBounds(20, 720, labelNumberOfRunningContainer.getPreferredSize().width, labelNumberOfRunningContainer.getPreferredSize().height);
+						comboBoxRunningContainer.addItem(nodeName+"Container");
 					};
 					executorService.execute(taskStartContainerJavaNode);
 				}
 			}
 
 			buttonImportUpdatedKs.setEnabled(true);
+			buttonGetLogs.setEnabled(true);
 		}
 
 		if(e.getSource()==buttonImportUpdatedKs){
@@ -287,6 +305,11 @@ public class GUI extends JFrame implements ActionListener{
 				// TODO Auto-generated catch block
 				e1.printStackTrace();
 			}
+		}
+		if(e.getSource()==buttonGetLogs){
+			System.out.println("Logs here");
+			System.out.println(DockerHelper.getContainerLogs(comboBoxRunningContainer.getSelectedItem().toString()));
+			textAreaLogs.setText(DockerHelper.getContainerLogs(comboBoxRunningContainer.getSelectedItem().toString()));
 		}
 	}
 }

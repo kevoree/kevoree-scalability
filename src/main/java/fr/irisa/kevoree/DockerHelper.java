@@ -1,5 +1,6 @@
 package fr.irisa.kevoree;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -7,24 +8,27 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 import com.github.dockerjava.api.DockerClient;
 import com.github.dockerjava.api.command.CreateContainerResponse;
 import com.github.dockerjava.api.exception.NotFoundException;
 import com.github.dockerjava.api.model.Bind;
 import com.github.dockerjava.api.model.ExposedPort;
+import com.github.dockerjava.api.model.Frame;
 import com.github.dockerjava.api.model.Network;
 import com.github.dockerjava.api.model.Ports;
 import com.github.dockerjava.api.model.Ports.Binding;
 import com.github.dockerjava.api.model.Volume;
 import com.github.dockerjava.core.DockerClientBuilder;
+import com.github.dockerjava.core.command.LogContainerResultCallback;
 
 public class DockerHelper{
 
 	/**
 	 * Initialize docker client
 	 */
-	private static final DockerClient dockerClient = DockerClientBuilder.getInstance(Config.DOCKER_DAEMON_HOST).build();
+	private static final DockerClient dockerClient = DockerClientBuilder.getInstance("tcp://"+Config.DOCKER_DAEMON_HOST).build();
 
 	/**
 	 * String list of container name used for remove all the container started with startContainerJavaNode() and startContainerJsNode()
@@ -49,10 +53,10 @@ public class DockerHelper{
 	 * Create a network for the container communication
 	 */
 	public static void createNetwork(){
-        Network.Ipam ipam = new Network.Ipam()
-        		.withConfig(new Network.Ipam.Config().withSubnet(Config.DOCKER_NETWORK_SUBNET));
-        
-        dockerClient.createNetworkCmd().withName(Config.DOCKER_NETWORK_NAME).withIpam(ipam).exec();
+		Network.Ipam ipam = new Network.Ipam()
+				.withConfig(new Network.Ipam.Config().withSubnet(Config.DOCKER_NETWORK_SUBNET));
+
+		dockerClient.createNetworkCmd().withName(Config.DOCKER_NETWORK_NAME).withIpam(ipam).exec();
 	}
 
 	/**
@@ -71,7 +75,7 @@ public class DockerHelper{
 			ExposedPort tcp9000 = ExposedPort.tcp(9000);
 			Ports portBindings = new Ports();
 			portBindings.bind(tcp9000, Binding.bindPort(9000));
-			
+
 			CreateContainerResponse container = dockerClient.createContainerCmd("kevoree/js")
 					.withNetworkMode(Config.DOCKER_NETWORK_NAME)
 					.withIpv4Address(ip)
@@ -116,11 +120,11 @@ public class DockerHelper{
 	 */
 	public static void startContainerJavaNode(String nodeName, String ip){
 		if(nodeName.equals(KevoreeHelper.getMasterNodeName())){
-			
+
 			ExposedPort tcp9000 = ExposedPort.tcp(9000);
 			Ports portBindings = new Ports();
 			portBindings.bind(tcp9000, Binding.bindPort(9000));
-			
+
 			//volumeKsContainerPath = new Volume("/kevoree/"+ksPath.split("/")[ksPath.split("/").length-1]);
 			CreateContainerResponse container = dockerClient.createContainerCmd("kevoree/java")
 					.withNetworkMode(Config.DOCKER_NETWORK_NAME)
@@ -151,7 +155,7 @@ public class DockerHelper{
 			dockerClient.startContainerCmd(container.getId())
 			.exec();
 		}
-		
+
 	}
 
 
@@ -159,7 +163,7 @@ public class DockerHelper{
 	/**
 	 * Remove all the container started with startContainerJavaNode() and startContainerJsNode()
 	 */
-	public static void removeAllContainer(){
+	public static void removeAllContainer(){	
 		try {
 			ExecutorService executor = Executors.newFixedThreadPool(KevoreeHelper.nodesNumber);
 			Collection<Callable<Void>> taskslist = new ArrayList<Callable<Void>>();
@@ -203,6 +207,54 @@ public class DockerHelper{
 		} catch (NotFoundException e) {
 			System.out.println("Neither network to remove");
 		}
+	}
 
+	public static String getContainerLogs(String containerId){
+		try {
+			LogContainerTestCallback loggingCallback = new LogContainerTestCallback(true);
+			
+			dockerClient.logContainerCmd(containerId)
+					.withStdErr(true)
+					.withStdOut(true)
+					.exec(loggingCallback);
+			
+			loggingCallback.awaitCompletion();
+			return loggingCallback.toString(); 
+			
+		} catch (InterruptedException e) {
+			return "Logs return error";
+		}
+	}
+
+	public static class LogContainerTestCallback extends LogContainerResultCallback {
+		protected final StringBuffer log = new StringBuffer();
+
+		List<Frame> collectedFrames = new ArrayList<Frame>();
+
+		boolean collectFrames = false;
+
+		public LogContainerTestCallback() {
+			this(false);
+		}
+
+		public LogContainerTestCallback(boolean collectFrames) {
+			this.collectFrames = collectFrames;
+		}
+
+		@Override
+		public void onNext(Frame frame) {
+			if(collectFrames) collectedFrames.add(frame);
+			log.append(new String(frame.getPayload()));
+		}
+
+		@Override
+		public String toString() {
+			return log.toString();
+		}
+
+
+		public List<Frame> getCollectedFrames() {
+			return collectedFrames;
+		}
 	}
 }
