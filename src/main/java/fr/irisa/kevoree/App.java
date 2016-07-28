@@ -19,7 +19,7 @@ public class App
 		Runtime.getRuntime().addShutdownHook(new Thread() {
 			@Override
 			public void run() {
-				DockerHelper.removeAllContainer();
+				DockerHelper.removeAllContainers();
 				DockerHelper.removeNetwork();
 			}
 		});

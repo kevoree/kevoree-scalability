@@ -163,7 +163,7 @@ public class DockerHelper{
 	/**
 	 * Remove all the container started with startContainerJavaNode() and startContainerJsNode()
 	 */
-	public static void removeAllContainer(){	
+	public static void removeAllContainers(){	
 		try {
 			ExecutorService executor = Executors.newFixedThreadPool(KevoreeHelper.nodesNumber);
 			Collection<Callable<Void>> taskslist = new ArrayList<Callable<Void>>();
