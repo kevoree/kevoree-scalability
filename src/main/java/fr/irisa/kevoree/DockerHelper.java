@@ -10,6 +10,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.commons.lang.StringUtils;
+
 import com.github.dockerjava.api.DockerClient;
 import com.github.dockerjava.api.command.CreateContainerResponse;
 import com.github.dockerjava.api.exception.NotFoundException;
@@ -53,10 +55,24 @@ public class DockerHelper{
 	 * Create a network for the container communication
 	 */
 	public static void createNetwork(){
-		Network.Ipam ipam = new Network.Ipam()
-				.withConfig(new Network.Ipam.Config().withSubnet(Config.DOCKER_NETWORK_SUBNET));
+		boolean existingNetwork = false;
 
-		dockerClient.createNetworkCmd().withName(Config.DOCKER_NETWORK_NAME).withIpam(ipam).exec();
+		List<Network> networks = dockerClient.listNetworksCmd().exec();
+
+		for (Network network : networks) {
+			if (StringUtils.equals(network.getName(), Config.DOCKER_NETWORK_NAME)) {
+				existingNetwork = true;
+			}
+		}
+
+		if(existingNetwork){
+			System.out.println("Kevoree-Scalability Network already exist");
+		}else{
+			Network.Ipam ipam = new Network.Ipam()
+					.withConfig(new Network.Ipam.Config().withSubnet(Config.DOCKER_NETWORK_SUBNET));
+
+			dockerClient.createNetworkCmd().withName(Config.DOCKER_NETWORK_NAME).withIpam(ipam).exec();
+		}
 	}
 
 	/**
@@ -212,15 +228,15 @@ public class DockerHelper{
 	public static String getContainerLogs(String containerId){
 		try {
 			LogContainerTestCallback loggingCallback = new LogContainerTestCallback(true);
-			
+
 			dockerClient.logContainerCmd(containerId)
-					.withStdErr(true)
-					.withStdOut(true)
-					.exec(loggingCallback);
-			
+			.withStdErr(true)
+			.withStdOut(true)
+			.exec(loggingCallback);
+
 			loggingCallback.awaitCompletion();
 			return loggingCallback.toString(); 
-			
+
 		} catch (InterruptedException e) {
 			return "Logs return error";
 		}

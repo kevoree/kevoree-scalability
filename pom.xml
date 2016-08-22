@@ -39,7 +39,7 @@
 		<dependency>
 			<groupId>com.github.docker-java</groupId>
 			<artifactId>docker-java</artifactId>
-			<version>3.0.0</version>
+			<version>3.0.1</version>
 		</dependency>
 		<!-- http://mvnrepository.com/artifact/org.slf4j/slf4j-simple -->
 		<dependency>
